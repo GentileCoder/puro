@@ -43,7 +43,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email, password) {
-    await signInWithEmailAndPassword(auth, email, password)
+    const cred = await signInWithEmailAndPassword(auth, email, password)
+    // Hydrate the store directly here, rather than waiting for the separate
+    // onAuthStateChanged listener below to catch up — that listener does its
+    // own async getIdTokenResult() call, so without this, the caller's
+    // router.push() right after login() could fire while auth.user is still
+    // null, and the router guard would bounce straight back to /login
+    // (looks like "the first click does nothing, the second one works").
+    const result = await cred.user.getIdTokenResult(true)
+    user.value = cred.user
+    role.value = result.claims.role || null
+    idToken.value = result.token
     return true
   }
 
