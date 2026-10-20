@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { usePuroStore } from '../../stores/puro'
 import { useI18n } from '../../i18n'
@@ -9,6 +10,7 @@ import AppLogo from './AppLogo.vue'
 
 const auth = useAuthStore()
 const puro = usePuroStore()
+const router = useRouter()
 const { t, currentLang, setLanguage, getLangLocale } = useI18n()
 
 const headerDate = computed(() =>
@@ -28,8 +30,14 @@ const fanId = computed(() => fanIdFor(puro.theme.id))
 const isAdmin = computed(() => auth.role === 'admin')
 const themeModalOpen = ref(false)
 
-function handleLogout() {
-  auth.logout()
+// Explicit navigation after logout, same reason as LoginView.vue's login
+// flow — the router guard only re-evaluates on an actual navigation
+// attempt, not just because auth.user reactively changed. Without this,
+// the app sat on whatever protected route it was on (chrome hidden, since
+// that part IS reactive) until a manual refresh forced a real re-check.
+async function handleLogout() {
+  await auth.logout()
+  router.push({ name: 'Login' })
 }
 </script>
 
