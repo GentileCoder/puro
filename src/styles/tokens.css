@@ -1,0 +1,32 @@
+/* Palette ported 1:1 from legacy/src/style.css — dark-only, no light mode,
+   indigo accent (distinct from LM Organizer's navy/gold palette). */
+:root {
+  --color-bg: #0d1117;
+  --color-surface: #161b22;
+  --color-surface-raised: #1c2128;
+  --color-border: #21262d;
+  --color-text: #e2e8f0;
+  --color-text-muted: #8b949e;
+
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+
+  --color-success-bg: #0d3321;
+  --color-success-fg: #6ee7b7;
+  --color-danger-bg: #3d0c0c;
+  --color-danger-fg: #fca5a5;
+  --color-warning-bg: #3d2200;
+  --color-warning-fg: #fcd34d;
+
+  --color-status-saving: #f59e0b;
+  --color-status-saved: #22c55e;
+  --color-status-offline: #ef4444;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 20px;
+
+  --transition-fast: 0.15s;
+}

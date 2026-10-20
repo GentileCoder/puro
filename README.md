@@ -1,116 +1,91 @@
-# El Toro
+# PURO
 
-A restaurant management PWA built as a single HTML file. Hosted on GitHub Pages and installable on iPhone via Safari → Share → Add to Home Screen.
+A restaurant management PWA for El Toro. Vue 3 + Vite + Pinia frontend, Google Cloud Identity
+Platform (= Firebase Auth) for login and roles, Firebase Hosting, and a Python Cloud Run worker
+(`el-toro-worker`) proxying a single JSON blob in Google Cloud Storage.
 
----
-
-## How It Works
-
-The app is a **single `index.html` file** — no frameworks, no build dependencies, pure vanilla HTML/CSS/JS. It talks to a Google Cloud Run proxy for data storage.
-
-### Source → Build → Deploy
-
-```
-src/              Edit these files
-  shell.html      HTML structure and placeholders
-  style.css       All CSS
-  js/
-    core.js       Constants, state, sync, utils, tabs, init
-    reservas.js   Reservations tab
-    mesas.js      Tables tab, order view, table settings
-    articulos.js  Articles tab, categories
-    historial.js  History tab (last 24h closed tables)
-    plan.js       Staff planning tab
-
-build.js          Assembles src/ → index.html
-serve.js          Local dev server (rebuilds on every browser reload)
-index.html        ← Generated output. Deploy this. Never edit directly.
-```
-
-**Never edit `index.html` directly.** It gets overwritten on every build. All changes go into `src/`.
+This app was migrated from a hand-built single-`index.html` vanilla-JS app (still available under
+[`legacy/`](legacy/) for reference) onto the stack documented in
+[`docs/app-development/`](docs/app-development/). See
+[`docs/app-development/04-migrations/static-html-github-pages-to-vue-firebase.md`](docs/app-development/04-migrations/static-html-github-pages-to-vue-firebase.md)
+for the migration playbook this followed.
 
 ---
 
-## Development Workflow
+## Stack
 
-### Start the dev server
+| Layer | Choice |
+|---|---|
+| Frontend | Vue 3 (Composition API, `<script setup>`) + Vite + Pinia + Vue Router |
+| Auth | Google Cloud Identity Platform (Firebase Auth), roles via JWT custom claims: `admin` / `staff` / `manager` |
+| Hosting | Firebase Hosting (`createWebHistory()`, clean URLs) |
+| Backend | `el-toro-worker` — Python Cloud Run function, unchanged by this migration |
+| Storage | Single JSON blob (`eltoro.json`) in a GCS bucket, proxied by the worker |
+| i18n | Hand-rolled `es`/`en`/`de` dictionary + `useI18n()` composable (`src/i18n/`) — no `vue-i18n` |
+
+## Development
 
 ```bash
-npm run dev
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # writes dist/
 ```
 
-Opens a local server at `http://localhost:8080`. Every browser refresh automatically rebuilds `index.html` from the `src/` files so you always see the latest changes.
+`.env` (git-ignored) needs:
+```
+VITE_FIREBASE_API_KEY=...   # non-secret, see docs/app-development/02-firebase/project-setup.md
+VITE_WORKER_URL=https://el-toro-worker-....run.app
+```
+See `.env.example` for the required keys.
 
-### Build without serving
+## Deploy
 
 ```bash
 npm run build
+npx firebase-tools deploy --only hosting
 ```
 
-Writes the assembled `index.html` to the project root.
-
-### Deploy to GitHub Pages
-
-After making changes:
-
+First time: `npx firebase-tools login`, then create the Hosting site (already configured in `firebase.json` as `placeyourorder`):
 ```bash
-npm run build
-git add .
-git commit -m "your message"
-git push
+npx firebase-tools hosting:sites:create placeyourorder --project gentilecoder
 ```
 
-GitHub Pages picks up the new `index.html` within ~1 minute.
+## Roles
 
----
+| Tab | admin | staff | manager |
+|---|---|---|---|
+| Reservas | ✅ | ✅ | ✅ |
+| Mesas | ✅ | ✅ | ✅ |
+| Artículos | ✅ | ❌ | ✅ |
+| Historial | ✅ | ❌ | ✅ |
+| Plan | ✅ (edit) | view-only | ✅ (edit) |
+| Usuarios | ✅ | ❌ | ❌ |
 
-## Configuration (per device, stored in localStorage)
+Users are managed from the Usuarios tab (admin only), which calls the worker's `/users` endpoints
+(backed by the Identity Platform Admin SDK — see `docs/Authentication_Implementation_Guide.md` for
+the backend side, already deployed).
 
-One value must be entered once per device via the header button:
+## App structure
 
-| Button | What it stores | Value |
-|--------|---------------|-------|
-| ⚙ URL | Google Cloud Run worker URL | See `.env` → `WORKER_URL` |
-
----
-
-## Backend & Storage
-
-A Cloud Run worker proxies all data to/from a JSON blob in Google Cloud Storage:
-
-- **GET** → returns the full app state as JSON
-- **POST** → writes the entire app state
-- **CORS:** `*`
-
-### Data shape
-
-```json
-{
-  "sections":    [{ "id": 1, "name": "Interior", "tables": [{ "id": 101, "label": "1" }] }],
-  "reservations":[{ "id": 1, "name": "García", "guests": 4, "date": "2026-04-20", "from": "13:30", "to": "15:30", "table": 101, "notes": "", "status": "confirmed" }],
-  "categories":  ["Comida", "Bebida", "Cerveza"],
-  "articulos":   [{ "id": 1, "name": "Patatas bravas", "cat": "Comida", "price": 4.50 }],
-  "openTables":  { "101": { "items": [{ "id": 1, "name": "Patatas bravas", "price": 4.50, "qty": 2 }], "openedAt": 1713600000000 } },
-  "planData":    { "2026-04-22|Fijo": "María" }
-}
+```
+src/
+  main.js, App.vue        bootstrap + chrome
+  firebase.js              Identity Platform config
+  router/index.js          routes + role guard
+  stores/auth.js            session, role, token refresh
+  stores/puro.js             the one domain store — matches the backend's single-blob save unit
+  services/                  httpClient + puroApi (blob GET/POST) + usersApi
+  utils/                      pure helpers (time, tables, reservations, plan)
+  i18n/                       es/en/de dictionary + composable
+  views/, components/         one view per tab, thin; shared UI in components/
+  styles/                     tokens.css (palette) + base.css + utilities.css
 ```
 
----
+## Known limitations (carried over from the legacy app)
 
-## Tabs
-
-| Tab | File | Description |
-|-----|------|-------------|
-| Reservas | `reservas.js` | Table reservations by date, section filter, detail panel |
-| Mesas | `mesas.js` | Live table status, order management, payment |
-| Artículos | `articulos.js` | Menu items and categories |
-| Historial | `historial.js` | Closed tables in the last 24 hours |
-| Plan | `plan.js` | Weekly staff schedule (Tue–Sat) |
-
----
-
-## Known Limitations
-
-- History is not persisted — cleared on page refresh
-- No offline support — requires internet for Cloud Run sync
-- The entire data object is re-saved on every change (no partial updates)
+- History (Historial) is in-memory only — cleared on page refresh, not persisted.
+- No offline support — requires connectivity for the worker and Identity Platform.
+- The entire data blob is re-saved on every change (no partial updates), debounced ~800ms client-side.
+- **Plan (weekly schedule) note:** saving the Plan tab replaces the *entire* stored schedule with
+  only the currently-viewed week's entries — a pre-existing behavior from the legacy app, not
+  introduced by this migration. Worth a deliberate product decision before it causes real data loss.
