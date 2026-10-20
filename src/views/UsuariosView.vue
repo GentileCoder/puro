@@ -1,10 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { listUsers, updateUserRole, deleteUser } from '../services/usersApi'
+import { listUsers, updateUser, deleteUser } from '../services/usersApi'
 import { useI18n } from '../i18n'
+import { useBusinessStore } from '../stores/business'
 import AddUserModal from '../components/usuarios/AddUserModal.vue'
 
 const { t } = useI18n()
+const business = useBusinessStore()
 
 // This is the break-glass account used to administer the gentilecoder GCP
 // project itself (Console/gcloud/firebase-tools) — removable here would mean
@@ -31,11 +33,22 @@ async function loadUsers() {
 
 onMounted(loadUsers)
 
-async function handleRoleChange(uid, role) {
+async function handleRoleChange(u, role) {
   try {
-    await updateUserRole(uid, role)
+    await updateUser(u.uid, role, u.businessId)
   } catch (e) {
     alert(e.message || t('users.error_role'))
+  } finally {
+    loadUsers()
+  }
+}
+
+async function handleBusinessChange(u, businessId) {
+  try {
+    await updateUser(u.uid, u.role, businessId)
+  } catch (e) {
+    alert(e.message || t('users.error_role'))
+  } finally {
     loadUsers()
   }
 }
@@ -81,11 +94,22 @@ function handleCreated() {
         </div>
         <div style="display: flex; gap: 8px; align-items: center">
           <span v-if="u.email === PROTECTED_ADMIN_EMAIL" style="font-size: 12px; color: #888">admin</span>
-          <select v-else :value="u.role" @change="handleRoleChange(u.uid, $event.target.value)">
-            <option value="admin">admin</option>
-            <option value="staff">staff</option>
-            <option value="manager">manager</option>
-          </select>
+          <template v-else>
+            <select :value="u.role" @change="handleRoleChange(u, $event.target.value)">
+              <option value="admin">admin</option>
+              <option value="staff">staff</option>
+              <option value="manager">manager</option>
+            </select>
+            <select
+              v-if="u.role !== 'admin'"
+              :value="u.businessId"
+              style="max-width: 140px"
+              @change="handleBusinessChange(u, $event.target.value)"
+            >
+              <option value="">{{ t('business.unassigned_option') }}</option>
+              <option v-for="b in business.businesses" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+          </template>
           <template v-if="u.email !== PROTECTED_ADMIN_EMAIL">
             <template v-if="confirmingUid === u.uid">
               <button class="res-act-btn del" @click="confirmDelete(u.uid)">{{ t('users.delete_confirm') }}</button>

@@ -12,6 +12,7 @@ const TOKEN_REFRESH_INTERVAL = 55 * 60 * 1000
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const role = ref(null)
+  const businessId = ref(null)
   const idToken = ref(null)
   const ready = ref(false)
   let refreshTimer = null
@@ -23,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
           const result = await fbUser.getIdTokenResult(true)
           user.value = fbUser
           role.value = result.claims.role || null
+          businessId.value = result.claims.businessId || null
           idToken.value = result.token
           clearInterval(refreshTimer)
           refreshTimer = setInterval(async () => {
@@ -31,6 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
         } else {
           user.value = null
           role.value = null
+          businessId.value = null
           idToken.value = null
           clearInterval(refreshTimer)
         }
@@ -53,6 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await cred.user.getIdTokenResult(true)
     user.value = cred.user
     role.value = result.claims.role || null
+    businessId.value = result.claims.businessId || null
     idToken.value = result.token
     return true
   }
@@ -61,5 +65,5 @@ export const useAuthStore = defineStore('auth', () => {
     await signOut(auth)
   }
 
-  return { user, role, idToken, ready, init, login, logout }
+  return { user, role, businessId, idToken, ready, init, login, logout }
 })

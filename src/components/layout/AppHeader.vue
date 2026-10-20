@@ -3,15 +3,20 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { usePuroStore } from '../../stores/puro'
+import { useBusinessStore } from '../../stores/business'
 import { useI18n } from '../../i18n'
 import { fanIdFor } from '../../theme/applyTheme'
 import ThemeSettingsModal from './ThemeSettingsModal.vue'
+import CreateBusinessModal from './CreateBusinessModal.vue'
 import AppLogo from './AppLogo.vue'
 
 const auth = useAuthStore()
 const puro = usePuroStore()
+const business = useBusinessStore()
 const router = useRouter()
 const { t, currentLang, setLanguage, getLangLocale } = useI18n()
+
+const createBusinessOpen = ref(false)
 
 const headerDate = computed(() =>
   new Date().toLocaleDateString(getLangLocale(), { weekday: 'long', day: 'numeric', month: 'long' }),
@@ -53,6 +58,16 @@ async function handleLogout() {
       <span v-if="fanId === 'brazil'" class="fan-row">
         <span class="fan-star">★★★★★</span> Pentacampeão
       </span>
+      <template v-if="isAdmin">
+        <select
+          :value="business.activeBusinessId"
+          style="font-size: 12px; padding: 3px 6px"
+          @change="business.selectBusiness($event.target.value)"
+        >
+          <option v-for="b in business.businesses" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
+        <button class="hbtn" :title="t('business.new')" @click="createBusinessOpen = true">+</button>
+      </template>
     </div>
     <span>{{ headerDate }}</span>
     <div style="display: flex; align-items: center; gap: 10px">
@@ -89,6 +104,7 @@ async function handleLogout() {
   ></div>
 
   <ThemeSettingsModal v-if="isAdmin" :open="themeModalOpen" @close="themeModalOpen = false" />
+  <CreateBusinessModal v-if="isAdmin" :open="createBusinessOpen" @close="createBusinessOpen = false" />
 </template>
 
 <style scoped>

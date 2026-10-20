@@ -1,15 +1,18 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from '../../i18n'
+import { useBusinessStore } from '../../stores/business'
 import { createUser } from '../../services/usersApi'
 
 const props = defineProps({ open: { type: Boolean, required: true } })
 const emit = defineEmits(['close', 'created'])
 const { t } = useI18n()
+const business = useBusinessStore()
 
 const email = ref('')
 const password = ref('')
 const role = ref('staff')
+const businessId = ref('')
 const error = ref('')
 
 watch(
@@ -19,6 +22,7 @@ watch(
     email.value = ''
     password.value = ''
     role.value = 'staff'
+    businessId.value = business.businesses[0]?.id || ''
     error.value = ''
   },
 )
@@ -28,9 +32,13 @@ async function handleCreate() {
     error.value = t('users.email_required')
     return
   }
+  if (role.value !== 'admin' && !businessId.value) {
+    error.value = t('business.name_required')
+    return
+  }
   error.value = ''
   try {
-    await createUser(email.value.trim(), password.value, role.value)
+    await createUser(email.value.trim(), password.value, role.value, role.value === 'admin' ? '' : businessId.value)
     emit('created')
   } catch (e) {
     error.value = e.message || t('users.error_create')
@@ -52,6 +60,12 @@ async function handleCreate() {
         <option value="manager">manager</option>
         <option value="admin">admin</option>
       </select>
+      <template v-if="role !== 'admin'">
+        <label>{{ t('business.assign_label') }}</label>
+        <select v-model="businessId">
+          <option v-for="b in business.businesses" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
+      </template>
       <div style="font-size: 12px; color: var(--color-danger-fg); min-height: 16px; margin-top: 8px">{{ error }}</div>
       <div class="modal-actions">
         <button class="btn-cancel" @click="emit('close')">{{ t('modal.cancel') }}</button>

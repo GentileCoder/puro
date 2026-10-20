@@ -7,54 +7,31 @@ import { DEFAULT_THEME } from '../theme/themes'
 const SAVE_DEBOUNCE_MS = 800
 const HISTORY_RETENTION_MS = 24 * 60 * 60 * 1000
 
-// Default/demo data — used as fallback when the cloud blob doesn't have a
-// field yet (first run), same semantics as the legacy core.js seed values.
+// PURO is multi-tenant: each business starts genuinely empty, not seeded
+// with El Toro's own specific sample content (its actual section names,
+// named customers, actual menu items) — that made sense when there was
+// exactly one restaurant, not now that "create a new business" is a real,
+// repeatable action for unrelated restaurants and bars.
 function defaultSections() {
-  return [
-    { id: 1, name: 'Interior', tables: [
-      { id: 101, label: '1' }, { id: 102, label: '2' }, { id: 103, label: '4' },
-      { id: 104, label: '5' }, { id: 105, label: '6' }, { id: 106, label: '7' },
-      { id: 107, label: '8' }, { id: 108, label: '9' }, { id: 109, label: '10' },
-      { id: 110, label: '11' }, { id: 111, label: '12' },
-    ] },
-    { id: 2, name: 'Terraza', tables: [
-      { id: 201, label: 'T1' }, { id: 202, label: 'T2' }, { id: 203, label: 'T3' },
-      { id: 204, label: 'T4' }, { id: 205, label: 'T5' },
-    ] },
-    { id: 3, name: 'Barra', tables: [
-      { id: 301, label: 'B1' }, { id: 302, label: 'B2' }, { id: 303, label: 'B3' },
-    ] },
-  ]
+  return []
 }
 
+// A generic starting template, not any one business's layout — reasonable
+// to keep seeding this one.
 function defaultCategories() {
   return ['Comida', 'Bebida', 'Softdrink', 'Café', 'Postre', 'Vino', 'Cerveza', 'Otro']
 }
 
 function defaultReservations() {
-  const today = new Date()
-  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-  return [
-    { id: 1, name: 'García Familia', guests: 4, date: todayIso, from: '13:30', to: '15:30', table: 101, notes: 'Cumpleaños', status: 'confirmed' },
-    { id: 2, name: 'Müller, Hans', guests: 2, date: todayIso, from: '20:00', to: '21:30', table: 101, notes: '', status: 'confirmed' },
-    { id: 3, name: 'Fernández, Ana', guests: 6, date: todayIso, from: '19:30', to: '22:00', table: 104, notes: 'Sin gluten', status: 'pending' },
-  ]
+  return []
 }
 
 function defaultArticulos() {
-  return [
-    { id: 1, name: 'Patatas bravas', cat: 'Comida', price: 4.5 },
-    { id: 2, name: 'Jamón ibérico', cat: 'Comida', price: 9.0 },
-    { id: 3, name: 'Cerveza Estrella', cat: 'Cerveza', price: 3.5 },
-    { id: 4, name: 'Agua mineral', cat: 'Softdrink', price: 2.0 },
-    { id: 5, name: 'Café solo', cat: 'Café', price: 1.8 },
-    { id: 6, name: 'Rioja Crianza', cat: 'Vino', price: 5.5 },
-  ]
+  return []
 }
 
-// ISO weekday 1=Mon..7=Sun. Matches the app's original hardcoded Tue-Sat,
-// 3-slots-a-day schedule — the default for a fresh install, and also what
-// an already-live blob (pre-dating the Business tab) gets migrated to.
+// ISO weekday 1=Mon..7=Sun. A generic Tue-Sat, 3-slots-a-day starting
+// template — not a specific business's data, reasonable to keep seeding.
 function defaultBusiness() {
   return {
     openDays: [2, 3, 4, 5, 6],
@@ -95,6 +72,10 @@ export const usePuroStore = defineStore('puro', () => {
   const syncStatus = ref('loading')
   let saveTimer = null
   let purgeTimer = null
+  // Remembered by load() and reused by persist() — every subsequent save
+  // from any mutation targets whichever business was most recently loaded,
+  // without threading an id through every single action.
+  let currentBusinessId = null
 
   function snapshot() {
     return {
@@ -112,11 +93,13 @@ export const usePuroStore = defineStore('puro', () => {
   }
 
   function persist() {
+    if (!currentBusinessId) return
+    const businessId = currentBusinessId
     clearTimeout(saveTimer)
     saveTimer = setTimeout(async () => {
       syncStatus.value = 'saving'
       try {
-        await saveState(snapshot())
+        await saveState(businessId, snapshot())
         syncStatus.value = 'saved'
       } catch {
         syncStatus.value = 'offline'
@@ -124,41 +107,40 @@ export const usePuroStore = defineStore('puro', () => {
     }, SAVE_DEBOUNCE_MS)
   }
 
-  async function load() {
+  // Called whenever the active business is set — on first login, and every
+  // time an admin switches businesses. Always resets to defaults first: a
+  // merge-only load (like this store's very first version had) would leak
+  // the previous business's leftover data into a newly-switched-to one for
+  // any field the new blob doesn't happen to define.
+  async function load(businessId) {
+    currentBusinessId = businessId
+    sections.value = defaultSections()
+    reservations.value = defaultReservations()
+    categories.value = defaultCategories()
+    articulos.value = defaultArticulos()
+    Object.keys(openTables).forEach((k) => delete openTables[k])
+    business.value = defaultBusiness()
+    Object.keys(planDraft).forEach((k) => delete planDraft[k])
+    Object.keys(planPublished).forEach((k) => delete planPublished[k])
+    planLocked.value = true
+    theme.value = { ...DEFAULT_THEME }
+    // In-memory only regardless, but a business switch shouldn't carry the
+    // previous business's recent-closures into the new one's view either.
+    history24.value = []
+
     syncStatus.value = 'loading'
     try {
-      const d = await loadState()
+      const d = await loadState(businessId)
       if (d.sections && d.sections.length) sections.value = d.sections
       if (d.reservations) reservations.value = d.reservations
       if (d.categories && d.categories.length) categories.value = d.categories
       if (d.articulos && d.articulos.length) articulos.value = d.articulos
       if (d.openTables) Object.assign(openTables, d.openTables)
       if (d.theme && d.theme.id) theme.value = d.theme
-
-      // --- Business tab migration ---
-      // Pre-dates the Business tab: only restaurantHours existed. Keep the
-      // rest of the defaults (Tue-Sat, 3-slots-a-day) so the already-live
-      // Plan grid doesn't suddenly go empty.
-      if (d.business) {
-        business.value = d.business
-      } else if (d.restaurantHours) {
-        business.value = { ...defaultBusiness(), hours: d.restaurantHours }
-      }
-
-      // --- Plan draft/lock migration ---
-      // Pre-dates the draft/lock workflow: only planData existed. Seed both
-      // draft and published from it and treat it as already-locked — this
-      // preserves exactly what's currently visible; admin/manager unlock
-      // whenever they're ready to start editing a new draft.
-      if (d.planDraft || d.planPublished) {
-        if (d.planDraft) Object.assign(planDraft, d.planDraft)
-        if (d.planPublished) Object.assign(planPublished, d.planPublished)
-        if (typeof d.planLocked === 'boolean') planLocked.value = d.planLocked
-      } else if (d.planData) {
-        Object.assign(planDraft, d.planData)
-        Object.assign(planPublished, d.planData)
-        planLocked.value = true
-      }
+      if (d.business) business.value = d.business
+      if (d.planDraft) Object.assign(planDraft, d.planDraft)
+      if (d.planPublished) Object.assign(planPublished, d.planPublished)
+      if (typeof d.planLocked === 'boolean') planLocked.value = d.planLocked
       syncStatus.value = 'synced'
     } catch {
       syncStatus.value = 'offline'

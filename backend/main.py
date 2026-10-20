@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 import functions_framework
 import firebase_admin
 from firebase_admin import auth as firebase_auth
@@ -7,7 +8,12 @@ from firebase_admin import exceptions as firebase_exceptions
 from google.cloud import storage
 
 BUCKET_NAME = "puro-data"
-FILE_NAME = "puro.json"
+BUSINESS_INDEX_FILE = "businesses.json"
+
+
+def business_file(business_id):
+    return f"business-{business_id}.json"
+
 
 # Break-glass account that administers the gentilecoder GCP project itself
 # (Console/gcloud/firebase-tools) — never deletable or demotable through this
@@ -52,6 +58,8 @@ def organizer(request):
         return (json.dumps({"error": "Unauthorized"}), 401, JSON_HEADERS)
 
     path = request.path.rstrip("/")
+    client = storage.Client()
+    bucket = client.bucket(BUCKET_NAME)
 
     # --- User management endpoints (admin only) ---
     if path == "/users":
@@ -61,7 +69,12 @@ def organizer(request):
         if request.method == "GET":
             page = firebase_auth.list_users()
             users = [
-                {"uid": u.uid, "email": u.email, "role": (u.custom_claims or {}).get("role", "")}
+                {
+                    "uid": u.uid,
+                    "email": u.email,
+                    "role": (u.custom_claims or {}).get("role", ""),
+                    "businessId": (u.custom_claims or {}).get("businessId", ""),
+                }
                 for u in page.users
             ]
             return (json.dumps(users), 200, JSON_HEADERS)
@@ -77,7 +90,10 @@ def organizer(request):
                 # or a malformed email — without this, any Admin SDK rejection
                 # crashed the whole handler into a raw, message-less 500.
                 return (json.dumps({"error": str(e)}), 400, JSON_HEADERS)
-            firebase_auth.set_custom_user_claims(user.uid, {"role": body.get("role", "staff")})
+            firebase_auth.set_custom_user_claims(user.uid, {
+                "role": body.get("role", "staff"),
+                "businessId": body.get("businessId", ""),
+            })
             return (json.dumps({"uid": user.uid}), 200, JSON_HEADERS)
 
         if request.method == "PUT":
@@ -88,7 +104,11 @@ def organizer(request):
                 return (json.dumps({"error": "User not found"}), 404, JSON_HEADERS)
             if target.email == PROTECTED_ADMIN_EMAIL and body["role"] != "admin":
                 return (json.dumps({"error": "This account's role can't be changed"}), 403, JSON_HEADERS)
-            firebase_auth.set_custom_user_claims(body["uid"], {"role": body["role"]})
+            claims = dict(target.custom_claims or {})
+            claims["role"] = body["role"]
+            if "businessId" in body:
+                claims["businessId"] = body["businessId"]
+            firebase_auth.set_custom_user_claims(body["uid"], claims)
             return (json.dumps({"ok": True}), 200, JSON_HEADERS)
 
         if request.method == "DELETE":
@@ -104,10 +124,39 @@ def organizer(request):
 
         return (json.dumps({"error": "Method not allowed"}), 405, JSON_HEADERS)
 
-    # --- Data endpoint: whole-blob GET/POST, any authenticated role ---
-    client = storage.Client()
-    bucket = client.bucket(BUCKET_NAME)
-    blob = bucket.blob(FILE_NAME)
+    # --- Business management endpoints (admin only) ---
+    if path == "/businesses":
+        if role != "admin":
+            return (json.dumps({"error": "Forbidden"}), 403, JSON_HEADERS)
+
+        index_blob = bucket.blob(BUSINESS_INDEX_FILE)
+
+        if request.method == "GET":
+            if not index_blob.exists():
+                return (json.dumps({"businesses": []}), 200, JSON_HEADERS)
+            return (index_blob.download_as_text(), 200, JSON_HEADERS)
+
+        if request.method == "POST":
+            body = request.get_json()
+            name = (body.get("name") or "").strip()
+            if not name:
+                return (json.dumps({"error": "Name is required"}), 400, JSON_HEADERS)
+            index = json.loads(index_blob.download_as_text()) if index_blob.exists() else {"businesses": []}
+            new_business = {"id": uuid.uuid4().hex[:10], "name": name}
+            index["businesses"].append(new_business)
+            index_blob.upload_from_string(json.dumps(index), content_type="application/json")
+            return (json.dumps(new_business), 200, JSON_HEADERS)
+
+        return (json.dumps({"error": "Method not allowed"}), 405, JSON_HEADERS)
+
+    # --- Data endpoint: whole-blob GET/POST, scoped + authorized per business ---
+    business_id = request.args.get("business")
+    if not business_id:
+        return (json.dumps({"error": "Missing business"}), 400, JSON_HEADERS)
+    if role != "admin" and decoded.get("businessId") != business_id:
+        return (json.dumps({"error": "Forbidden"}), 403, JSON_HEADERS)
+
+    blob = bucket.blob(business_file(business_id))
 
     if request.method == "GET":
         if not blob.exists():
