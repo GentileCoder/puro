@@ -108,3 +108,33 @@ Details: `02-firebase/project-setup.md`.
 → Somewhere, a `value || fallback` is treating a legitimate `0` as "missing" because `0` is falsy in
 JS. Use `value ?? fallback` (nullish coalescing) instead, wherever `0`/`false` are meaningful values.
 Details: `01-frontend-vue/gotchas.md` #1.
+
+---
+
+**`firebase hosting:sites:create` → 400 "Invalid name: ... is reserved by another project"**
+→ Site names are unique across every Firebase project on Earth, not just yours. Try the CLI's own
+suggested fallback name, or another of your own.
+Details: `02-firebase/hosting-and-deployment.md`.
+
+---
+
+**`firebase hosting:sites:create` (or similar) → 403 "The caller does not have permission", right after being granted project access**
+→ Not a real permission problem — confirm with `gcloud projects get-iam-policy ... --filter=...`
+that the role is actually there. This is Firebase Hosting's own authorization cache lagging behind
+core Cloud IAM for a newly-added account; it resolves itself, usually within a few minutes.
+Details: `02-firebase/hosting-and-deployment.md`.
+
+---
+
+**`gcloud projects add-iam-policy-binding ... --role=roles/owner` → `SOLO_MUST_INVITE_OWNERS`**
+→ Granting Owner to a brand-new principal can't be done via the API/CLI at all — it requires the
+Console's "Grant Access" invite flow, and the invited account has to separately accept it.
+Details: `02-firebase/project-ownership-and-access.md`.
+
+---
+
+**`firebase-admin` (Node): `TypeError: admin.auth is not a function`**
+→ The older namespaced style (`const admin = require('firebase-admin'); admin.auth()`) can break
+depending on which SDK version got installed. Switch to the modular imports:
+`require('firebase-admin/app')` / `require('firebase-admin/auth')`.
+Details: `02-firebase/authentication.md`.

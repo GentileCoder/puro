@@ -17,8 +17,8 @@ architecture rules; read this for how the rubber actually met the road.
 | Folder | What's in it |
 |---|---|
 | [`01-frontend-vue/`](01-frontend-vue/) | The trimmed-down Vue stack actually used, the build order, and Vue-specific bugs hit and fixed |
-| [`02-firebase/`](02-firebase/) | Setting up a Firebase project, Authentication (incl. the username-not-email trick), and Hosting |
-| [`03-backend/`](03-backend/) | The Python Cloud Run backend pattern, and the real pain of getting `gcloud` working on macOS |
+| [`02-firebase/`](02-firebase/) | Setting up a Firebase project, Authentication (incl. the username-not-email trick), Hosting, and giving a second Google account access to the project |
+| [`03-backend/`](03-backend/) | The Python Cloud Run backend pattern, standing up a new app's bucket+worker, and the real pain of getting `gcloud` working on macOS |
 | [`04-migrations/`](04-migrations/) | Concrete steps for migrating a single-`index.html`-on-GitHub-Pages app to this stack |
 | [`05-new-app-from-scratch/`](05-new-app-from-scratch/) | Checklist for starting a brand new app on this stack, no legacy code involved |
 | [`06-design-system/`](06-design-system/) | LM Organizer's actual current design system (colors, type, components), plus a placeholder for a future cross-app version |

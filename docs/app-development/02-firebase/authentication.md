@@ -44,17 +44,53 @@ ever types their plain username.
 The standard "forgot password" flow sends a real email — which cannot arrive at a fake `.local`
 address, since there's no mailbox there. **Don't rely on the console's "reset password" button
 either** — it also just sends that same undeliverable email. The actual fallback, when someone
-forgets a password, is a one-off script using the Admin SDK, run locally:
+forgets a password, is a one-off script using the Admin SDK, run locally or in Cloud Shell:
 
 ```js
-// node, with firebase-admin installed and credentialed (e.g. via `gcloud auth application-default login`)
-const admin = require('firebase-admin')
-admin.initializeApp()
-await admin.auth().updateUser('<uid>', { password: 'newpassword' })
+// node, with firebase-admin installed and credentialed (e.g. via `gcloud auth application-default login`,
+// or just Cloud Shell's own ambient credentials — no setup needed there)
+const { initializeApp } = require('firebase-admin/app')
+const { getAuth } = require('firebase-admin/auth')
+const auth = getAuth(initializeApp({ projectId: 'your-project-id' }))
+await auth.updateUser('<uid>', { password: 'newpassword' })
 ```
 
 This sets the password directly, no email involved. Keep this script (or the one-liner) handy
 rather than rediscovering it under pressure the first time someone actually forgets a password.
+
+**Use the modular imports above (`firebase-admin/app`, `firebase-admin/auth`), not the older
+namespaced style** (`const admin = require('firebase-admin'); admin.auth()...`) — depending on which
+`firebase-admin` version a fresh `npm install` pulls (Cloud Shell's own included version, or whatever
+is current when you run this), the namespaced style can fail with:
+
+```
+TypeError: admin.auth is not a function
+```
+
+The modular form works consistently across versions and is the SDK's own current documented style, so
+default to it rather than troubleshooting which older version the namespaced form still works on.
+
+### Minting the *first* admin when there isn't one to reset
+
+If you've lost access entirely — no working admin login, nobody to grant you one — the same modular
+pattern creates a brand-new user and gives it a role, from Cloud Shell, no local setup at all:
+
+```js
+const { initializeApp } = require('firebase-admin/app')
+const { getAuth } = require('firebase-admin/auth')
+const auth = getAuth(initializeApp({ projectId: 'your-project-id' }))
+
+async function main() {
+  const user = await auth.createUser({ email: 'you@example.com', password: 'a-real-password' })
+  await auth.setCustomUserClaims(user.uid, { role: 'admin' })
+  console.log('Created admin user:', user.uid)
+}
+main().catch((err) => { console.error(err); process.exit(1) })
+```
+
+Cloud Shell (console.cloud.google.com → the `>_` icon) is the easiest place to run this — it's already
+authenticated as whichever Google account you're signed into the console as, no credential file and no
+local `gcloud auth application-default login` step needed.
 
 ## Per-user data isolation: a valid login is not the same as authorization
 

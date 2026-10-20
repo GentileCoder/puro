@@ -70,3 +70,46 @@ partial-update/merge logic preemptively; add it if and when that actually happen
 Since there's no partial-update endpoint, the frontend should debounce writes (~400ms, see
 `../01-frontend-vue/stack-and-structure.md`) so rapid interaction doesn't turn into a save-per-click
 flood. The backend itself stays simple — it doesn't need to know or care how often it's called.
+
+## Setting up a new app's bucket + worker from scratch
+
+**One bucket, one Cloud Run service, per app — don't share a worker across apps.** Each app gets its
+own blob and its own backend, same pattern as this doc's handler, even though every app's handler
+looks nearly identical. This keeps blast radius small: redeploying or misconfiguring one app's worker
+can't touch another app's data, and deleting an app later is "delete its bucket and its service," not
+"carefully extract its code from a shared one."
+
+```bash
+gsutil mb -l your-region gs://your-app-data
+```
+
+No special setup beyond that — the bucket starts empty, and the backend's first successful `POST`
+creates the actual JSON blob inside it. Don't pre-seed it.
+
+Then deploy the worker itself (same command shape as `../03-backend/gcloud-cli-setup.md`'s "A Cloud
+Run service with this name already exists" fix, used here for a first deploy rather than a fix):
+
+```bash
+gcloud run deploy your-app-worker \
+  --region=your-region \
+  --source=./backend \
+  --function=your_entry_point \
+  --allow-unauthenticated \
+  --service-account=existing-worker@your-project.iam.gserviceaccount.com
+```
+
+**Reuse an existing app's service account rather than minting a dedicated one per app**, unless you
+specifically need tighter IAM isolation between apps — one shared service account already has the
+Storage + Firebase Admin roles a worker needs, and adding another app's worker under it is one line,
+versus a new service account needing those roles granted again from scratch. The bucket-per-app and
+service-per-app separation is what actually isolates apps from each other day to day (different
+resources, different URLs, independently deployable/deletable); the service account being shared is a
+convenience, not a security boundary you're relying on here.
+
+`--allow-unauthenticated` makes the Cloud Run service itself publicly reachable at the network level —
+that's intentional and matches the auth model in this doc: the handler's own `verify_token`/allowlist
+check is what actually gates access, not Cloud Run's ingress setting. If an agent or tool flags this
+flag as "weakening auth" before running it, that's a reasonable thing to pause on in isolation, but
+it's the correct, intended setting for this pattern — Cloud Run's *other* option
+(`--no-allow-unauthenticated`) would require every caller to carry a *Google Cloud* identity token on
+top of the app's own Firebase one, which isn't how this frontend talks to the worker.

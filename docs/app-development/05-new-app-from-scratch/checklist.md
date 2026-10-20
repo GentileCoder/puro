@@ -18,6 +18,11 @@ Run/Functions layer if the app needs to keep a third-party API key server-side, 
 boundary in front of multiple upstreams, or needs to sit in front of storage (like a GCS bucket)
 that has no native per-user browser-safe access control of its own.
 
+If it does, give it its own bucket and its own Cloud Run worker — don't share either with another
+app. See `../03-backend/cloud-run-python-pattern.md`'s "Setting up a new app's bucket + worker from
+scratch" for the actual `gsutil mb` / `gcloud run deploy` steps and the reasoning for keeping apps
+isolated this way even when their backend code is nearly identical.
+
 ## 3. Set up Firebase (if the app needs real auth)
 
 `../02-firebase/project-setup.md` → `authentication.md` → `hosting-and-deployment.md`, in that
