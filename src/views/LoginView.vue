@@ -34,7 +34,7 @@ async function handleSubmit() {
 <template>
   <div id="loginOverlay">
     <div id="loginBox">
-      <AppLogo :size="48" style="margin-bottom: 8px" />
+      <AppLogo :size="48" variant="full" style="margin-bottom: 8px" />
       <h2>PURO</h2>
       <div class="login-sub">Place U R Order</div>
       <div style="display: flex; justify-content: center; gap: 4px; margin-bottom: 14px">
