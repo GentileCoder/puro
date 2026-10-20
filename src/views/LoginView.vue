@@ -54,7 +54,7 @@ async function handleSubmit() {
 
 <style scoped>
 #loginOverlay { position: fixed; inset: 0; background: var(--color-bg); z-index: 200; display: flex; align-items: center; justify-content: center; }
-#loginBox { background: var(--color-surface); border-radius: 16px; padding: 36px 32px; width: 340px; border: 1px solid var(--color-border); text-align: center; }
+#loginBox { background: var(--color-surface); border-radius: var(--radius-xl); padding: 36px 32px; width: 340px; border: 1px solid var(--color-border); text-align: center; box-shadow: var(--card-shadow); }
 #loginBox h2 { font-family: var(--font-heading); font-size: 28px; font-weight: 800; margin-bottom: 6px; color: var(--color-primary-hover); letter-spacing: 4px; }
 .login-sub { font-size: 12px; color: var(--color-text-muted); margin-bottom: 28px; letter-spacing: 0.5px; }
 #loginBox input { width: 100%; margin-bottom: 10px; text-align: left; }

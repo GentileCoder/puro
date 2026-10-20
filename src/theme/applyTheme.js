@@ -38,6 +38,7 @@ export function applyTheme(themeId, mode) {
   root.setProperty('--t-card-shadow', tokens.cardShadow)
   root.setProperty('--t-font-heading', theme.fonts.heading)
   root.setProperty('--t-font-body', theme.fonts.body)
+  root.setProperty('--t-radius-lg', `${theme.radiusLg ?? 10}px`)
 
   ensureFontLoaded(theme.fonts.href)
 }

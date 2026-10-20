@@ -176,6 +176,83 @@ export const THEMES = {
     },
     fanId: 'brazil',
   },
+  bloom: {
+    label: 'Bloom',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Quicksand:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap',
+      heading: "'Quicksand', sans-serif",
+      body: "'Nunito Sans', sans-serif",
+    },
+    radiusLg: 18,
+    light: {
+      bg: '#F4F1FA', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E4DEF2',
+      text: '#3A3550', textMuted: '#8D84A8', textFaint: '#B2A8C9',
+      primary: '#9B87C4', primaryText: '#FFFFFF',
+      success: '#7FA98A', danger: '#D98484', dangerStrong: '#C2605F', warning: '#D9B86B', info: '#7FA9C9',
+      gold: '#9B87C4', flagBlue: '#7FA9C9',
+      cardShadow: '0 10px 24px rgba(155,135,196,.18)',
+    },
+    dark: {
+      bg: '#211C2E', surface: '#2A2438', surfaceRaised: '#2A2438', border: '#453C5C',
+      text: '#EDE9F5', textMuted: '#A79BC4', textFaint: '#8D81A8',
+      primary: '#B39EDD', primaryText: '#211C2E',
+      success: '#8FC49A', danger: '#E29A9A', dangerStrong: '#D97A7A', warning: '#E3C988', info: '#9AC4DE',
+      gold: '#B39EDD', flagBlue: '#9AC4DE',
+      cardShadow: '0 10px 24px rgba(0,0,0,.35)',
+    },
+  },
+  block: {
+    label: 'Block',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap',
+      heading: "'Archivo Black', sans-serif",
+      body: "'Space Mono', monospace",
+    },
+    radiusLg: 2,
+    light: {
+      bg: '#F2F0EA', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#111111',
+      text: '#111111', textMuted: '#4A4A4A', textFaint: '#7A7A7A',
+      primary: '#FF4D2E', primaryText: '#FFFFFF',
+      success: '#00B86B', danger: '#E8392B', dangerStrong: '#C01F14', warning: '#F5E03F', info: '#2B6CE8',
+      gold: '#F5E03F', flagBlue: '#2B6CE8',
+      cardShadow: '4px 4px 0 #111111',
+    },
+    dark: {
+      bg: '#121212', surface: '#1A1A1A', surfaceRaised: '#1A1A1A', border: '#F5F3EE',
+      text: '#F5F3EE', textMuted: '#B8B6B0', textFaint: '#8A8880',
+      primary: '#FF4D2E', primaryText: '#FFFFFF',
+      success: '#00D97E', danger: '#FF5C47', dangerStrong: '#E8392B', warning: '#F5E03F', info: '#5B8CFF',
+      gold: '#F5E03F', flagBlue: '#5B8CFF',
+      cardShadow: '4px 4px 0 #F5F3EE',
+    },
+  },
+  aurora: {
+    label: 'Aurora',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap',
+      heading: "'Outfit', sans-serif",
+      body: "'Work Sans', sans-serif",
+    },
+    radiusLg: 16,
+    light: {
+      bg: 'linear-gradient(135deg, #EAF2FF 0%, #F3ECFF 50%, #FFF0F6 100%)',
+      surface: 'rgba(255,255,255,0.55)', surfaceRaised: 'rgba(255,255,255,0.55)', border: 'rgba(255,255,255,0.7)',
+      text: '#1D2036', textMuted: '#6B7290', textFaint: '#9A9FC0',
+      primary: '#6C5CE7', primaryText: '#FFFFFF',
+      success: '#16A38A', danger: '#E2554B', dangerStrong: '#C23A30', warning: '#D9A441', info: '#2FA7DE',
+      gold: '#6C5CE7', flagBlue: '#2FA7DE',
+      cardShadow: '0 8px 32px rgba(108,92,231,.18)',
+    },
+    dark: {
+      bg: 'linear-gradient(135deg, #0E1030 0%, #1B1240 50%, #2B0F3A 100%)',
+      surface: 'rgba(255,255,255,0.07)', surfaceRaised: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.14)',
+      text: '#F1F0FA', textMuted: '#9C9BC4', textFaint: '#726FA0',
+      primary: '#8B7CFF', primaryText: '#0E1030',
+      success: '#2FE0B8', danger: '#FF6B6B', dangerStrong: '#E8392B', warning: '#E8B860', info: '#5CC8FF',
+      gold: '#8B7CFF', flagBlue: '#5CC8FF',
+      cardShadow: '0 8px 32px rgba(0,0,0,.4)',
+    },
+  },
 }
 
 export const DEFAULT_THEME = { id: 'deepwork', mode: 'dark' }
