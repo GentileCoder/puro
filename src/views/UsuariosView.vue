@@ -6,10 +6,16 @@ import AddUserModal from '../components/usuarios/AddUserModal.vue'
 
 const { t } = useI18n()
 
+// This is the break-glass account used to administer the gentilecoder GCP
+// project itself (Console/gcloud/firebase-tools) — removable here would mean
+// a UI click could lock everyone out of the infrastructure, not just the app.
+const PROTECTED_ADMIN_EMAIL = 'gentile.leon0511@gmail.com'
+
 const users = ref([])
 const loading = ref(true)
 const loadError = ref(false)
 const modalOpen = ref(false)
+const confirmingUid = ref(null)
 
 async function loadUsers() {
   loading.value = true
@@ -34,13 +40,22 @@ async function handleRoleChange(uid, role) {
   }
 }
 
-async function handleDelete(uid, email) {
-  if (!confirm(t('users.confirm_delete').replace('{email}', email))) return
+function requestDelete(uid) {
+  confirmingUid.value = uid
+}
+
+function cancelDelete() {
+  confirmingUid.value = null
+}
+
+async function confirmDelete(uid) {
   try {
     await deleteUser(uid)
     loadUsers()
   } catch {
     alert(t('users.error_delete'))
+  } finally {
+    confirmingUid.value = null
   }
 }
 
@@ -70,7 +85,13 @@ function handleCreated() {
             <option value="staff">staff</option>
             <option value="manager">manager</option>
           </select>
-          <button class="res-act-btn del" @click="handleDelete(u.uid, u.email)">{{ t('users.delete') }}</button>
+          <template v-if="u.email !== PROTECTED_ADMIN_EMAIL">
+            <template v-if="confirmingUid === u.uid">
+              <button class="res-act-btn del" @click="confirmDelete(u.uid)">{{ t('users.delete_confirm') }}</button>
+              <button class="res-act-btn" @click="cancelDelete">{{ t('modal.cancel') }}</button>
+            </template>
+            <button v-else class="res-act-btn del" @click="requestDelete(u.uid)">{{ t('users.delete') }}</button>
+          </template>
         </div>
       </div>
     </div>
