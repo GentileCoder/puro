@@ -2,7 +2,7 @@
 
 A restaurant management PWA for El Toro. Vue 3 + Vite + Pinia frontend, Google Cloud Identity
 Platform (= Firebase Auth) for login and roles, Firebase Hosting, and a Python Cloud Run worker
-(`el-toro-worker`) proxying a single JSON blob in Google Cloud Storage.
+(`puro-worker`) proxying a single JSON blob in Google Cloud Storage (`puro-data` bucket).
 
 This app was migrated from a hand-built single-`index.html` vanilla-JS app (still available under
 [`legacy/`](legacy/) for reference) onto the stack documented in
@@ -19,9 +19,10 @@ for the migration playbook this followed.
 | Frontend | Vue 3 (Composition API, `<script setup>`) + Vite + Pinia + Vue Router |
 | Auth | Google Cloud Identity Platform (Firebase Auth), roles via JWT custom claims: `admin` / `staff` / `manager` |
 | Hosting | Firebase Hosting (`createWebHistory()`, clean URLs) |
-| Backend | `el-toro-worker` — Python Cloud Run function, unchanged by this migration |
-| Storage | Single JSON blob (`eltoro.json`) in a GCS bucket, proxied by the worker |
+| Backend | `puro-worker` — Python Cloud Run function (`backend/`), dedicated to this app |
+| Storage | Single JSON blob (`puro.json`) in the `puro-data` GCS bucket, proxied by the worker |
 | i18n | Hand-rolled `es`/`en`/`de` dictionary + `useI18n()` composable (`src/i18n/`) — no `vue-i18n` |
+| Theming | 7 selectable themes (`src/theme/`), each with light+dark — admin-only, shared app-wide via the cloud blob |
 
 ## Development
 
@@ -61,6 +62,15 @@ The Hosting site `placeurorder` (configured in `firebase.json`) is already creat
 Users are managed from the Usuarios tab (admin only), which calls the worker's `/users` endpoints
 (backed by the Identity Platform Admin SDK — see `docs/Authentication_Implementation_Guide.md` for
 the backend side, already deployed).
+
+## Theme
+
+The "⚙ Theme" header button (admin role only) opens a picker for 7 themes × light/dark, ported
+from `docs/app-development/06-design-system/themes/` (Deepwork, Paper, Pulse, Sunset, Real Madrid,
+Cuba, Brazil). The choice is saved to the cloud blob, so it applies for every user on every device
+— not a per-device preference. `src/theme/themes.js` holds the token tables; `applyTheme.js` sets
+them as CSS custom properties (`--t-*`) on `:root`, which `styles/tokens.css` derives every
+component-facing token from, so no component styling needed to change per theme.
 
 ## App structure
 

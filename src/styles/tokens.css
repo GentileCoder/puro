@@ -1,22 +1,54 @@
-/* Palette ported 1:1 from legacy/src/style.css — dark-only, no light mode,
-   indigo accent (distinct from LM Organizer's navy/gold palette). */
+/* Theme system ported from docs/app-development/06-design-system/themes/ — 7 selectable
+   themes (Deepwork default), each with light+dark. src/theme/applyTheme.js sets the raw
+   --t-* tokens below on :root at runtime; everything else here is a derived, static formula
+   so no component CSS needs to know about themes at all. Defaults below (Deepwork/dark)
+   only matter before JS first runs. */
 :root {
-  --color-bg: #0d1117;
-  --color-surface: #161b22;
-  --color-surface-raised: #1c2128;
-  --color-border: #21262d;
-  --color-text: #e2e8f0;
-  --color-text-muted: #8b949e;
+  --t-bg: #0A0D14;
+  --t-surface: #10141C;
+  --t-surface-raised: #171D28;
+  --t-border: #232B38;
+  --t-text: #EDEFF3;
+  --t-text-muted: #8A94A6;
+  --t-text-faint: #5C6474;
+  --t-primary: #E3A03D;
+  --t-primary-text: #0A0D14;
+  --t-success: #4FC38A;
+  --t-danger: #E2604D;
+  --t-danger-strong: #FF6B6B;
+  --t-warning: #D98C2B;
+  --t-info: #5B9EE8;
+  --t-gold: #E3A03D;
+  --t-flag-blue: #5B9EE8;
+  --t-card-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  --t-font-heading: 'Space Grotesk', sans-serif;
+  --t-font-body: 'Manrope', sans-serif;
 
-  --color-primary: #6366f1;
-  --color-primary-hover: #818cf8;
+  --color-bg: var(--t-bg);
+  --color-surface: var(--t-surface);
+  --color-surface-raised: var(--t-surface-raised);
+  --color-border: var(--t-border);
+  --color-text: var(--t-text);
+  --color-text-muted: var(--t-text-muted);
+  --color-text-faint: var(--t-text-faint);
 
-  --color-success-bg: #0d3321;
-  --color-success-fg: #6ee7b7;
-  --color-danger-bg: #3d0c0c;
-  --color-danger-fg: #fca5a5;
-  --color-warning-bg: #3d2200;
-  --color-warning-fg: #fcd34d;
+  --color-primary: var(--t-primary);
+  --color-primary-hover: color-mix(in srgb, var(--t-primary) 85%, white);
+  --color-primary-text: var(--t-primary-text);
+
+  --color-success-fg: var(--t-success);
+  --color-success-bg: color-mix(in srgb, var(--t-success) 18%, var(--t-surface));
+  --color-danger-fg: var(--t-danger);
+  --color-danger-bg: color-mix(in srgb, var(--t-danger) 18%, var(--t-surface));
+  --color-danger-strong: var(--t-danger-strong);
+  --color-warning-fg: var(--t-warning);
+  --color-warning-bg: color-mix(in srgb, var(--t-warning) 18%, var(--t-surface));
+  --color-info: var(--t-info);
+  --color-gold: var(--t-gold);
+  --color-flag-blue: var(--t-flag-blue);
+  --card-shadow: var(--t-card-shadow);
+  --font-heading: var(--t-font-heading);
+  --font-body: var(--t-font-body);
 
   --color-status-saving: #f59e0b;
   --color-status-saved: #22c55e;

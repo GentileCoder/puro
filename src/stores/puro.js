@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 import { loadState, saveState } from '../services/puroApi'
 import { getOrderKey } from '../utils/tables'
+import { DEFAULT_THEME } from '../theme/themes'
 
 const SAVE_DEBOUNCE_MS = 800
 const HISTORY_RETENTION_MS = 24 * 60 * 60 * 1000
@@ -62,6 +63,7 @@ export const usePuroStore = defineStore('puro', () => {
   const openTables = reactive({})
   const planData = reactive({})
   const restaurantHours = ref({ open: '12:00', close: '23:00' })
+  const theme = ref({ ...DEFAULT_THEME })
 
   // In-memory only, intentionally never persisted to the cloud blob —
   // matches the legacy "known limitation," not a bug to fix.
@@ -80,6 +82,7 @@ export const usePuroStore = defineStore('puro', () => {
       planData: { ...planData },
       openTables: { ...openTables },
       restaurantHours: restaurantHours.value,
+      theme: theme.value,
     }
   }
 
@@ -107,6 +110,7 @@ export const usePuroStore = defineStore('puro', () => {
       if (d.planData) Object.assign(planData, d.planData)
       if (d.openTables) Object.assign(openTables, d.openTables)
       if (d.restaurantHours) restaurantHours.value = d.restaurantHours
+      if (d.theme && d.theme.id) theme.value = d.theme
       syncStatus.value = 'synced'
     } catch {
       syncStatus.value = 'offline'
@@ -224,6 +228,13 @@ export const usePuroStore = defineStore('puro', () => {
     history24.value = history24.value.filter((h) => h.closedAt > cutoff)
   }
 
+  // --- Theme (admin-only in the UI; shared app-wide via the cloud blob) ---
+
+  function setTheme(id, mode) {
+    theme.value = { id, mode }
+    persist()
+  }
+
   // --- Plan ---
 
   function savePlan(entries) {
@@ -240,10 +251,12 @@ export const usePuroStore = defineStore('puro', () => {
     openTables,
     planData,
     restaurantHours,
+    theme,
     history24,
     syncStatus,
     load,
     persist,
+    setTheme,
     addReservation,
     toggleResStatus,
     deleteReservation,

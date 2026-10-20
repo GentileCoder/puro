@@ -1,0 +1,181 @@
+// Theme registry ported from docs/app-development/06-design-system/themes/ — the same 7
+// shipped LM Organizer themes, reused as-is. Each theme has its own light + dark token set;
+// mode (light/dark) is selected independently of theme (see ThemeSettingsModal.vue).
+export const THEMES = {
+  deepwork: {
+    label: 'Deepwork',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap',
+      heading: "'Space Grotesk', sans-serif",
+      body: "'Manrope', sans-serif",
+    },
+    dark: {
+      bg: '#0A0D14', surface: '#10141C', surfaceRaised: '#171D28', border: '#232B38',
+      text: '#EDEFF3', textMuted: '#8A94A6', textFaint: '#5C6474',
+      primary: '#E3A03D', primaryText: '#0A0D14',
+      success: '#4FC38A', danger: '#E2604D', dangerStrong: '#FF6B6B', warning: '#D98C2B', info: '#5B9EE8',
+      gold: '#E3A03D', flagBlue: '#5B9EE8',
+      cardShadow: '0 8px 20px rgba(0,0,0,.28)',
+    },
+    light: {
+      bg: '#F5F6F8', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E1E4EA',
+      text: '#12141A', textMuted: '#6B7280', textFaint: '#9CA3AF',
+      primary: '#C9861E', primaryText: '#FFFFFF',
+      success: '#2F9563', danger: '#C94A32', dangerStrong: '#E0392A', warning: '#B9790F', info: '#3B7FC4',
+      gold: '#C9861E', flagBlue: '#3B7FC4',
+      cardShadow: '0 8px 20px rgba(16,20,28,.08)',
+    },
+  },
+  paper: {
+    label: 'Paper',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;600;700&display=swap',
+      heading: "'Newsreader', serif",
+      body: "'Karla', sans-serif",
+    },
+    light: {
+      bg: '#FAF6EF', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E8E0D2',
+      text: '#2B2620', textMuted: '#8A7F6C', textFaint: '#B0A48D',
+      primary: '#C1622D', primaryText: '#FFFFFF',
+      success: '#5B8A5A', danger: '#B0453A', dangerStrong: '#8F2E24', warning: '#B08A2E', info: '#4A7A8C',
+      gold: '#C1622D', flagBlue: '#4A7A8C',
+      cardShadow: 'none',
+    },
+    dark: {
+      bg: '#1C1712', surface: '#241E17', surfaceRaised: '#2C2419', border: '#3D3427',
+      text: '#F0E9DD', textMuted: '#A69A87', textFaint: '#7D735F',
+      primary: '#E08249', primaryText: '#1C1712',
+      success: '#7FB07E', danger: '#D9705F', dangerStrong: '#C24B3A', warning: '#D1A855', info: '#6FA3B5',
+      gold: '#E08249', flagBlue: '#6FA3B5',
+      cardShadow: 'none',
+    },
+  },
+  pulse: {
+    label: 'Pulse',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap',
+      heading: "'Sora', sans-serif",
+      body: "'IBM Plex Sans', sans-serif",
+    },
+    dark: {
+      bg: '#08090B', surface: '#121316', surfaceRaised: '#121316', border: '#2A2D33',
+      text: '#F2F3F5', textMuted: '#9096A1', textFaint: '#5C606B',
+      primary: '#7C5CFC', primaryText: '#08090B',
+      success: '#34D399', danger: '#FB5A5A', dangerStrong: '#FF3B3B', warning: '#F5A623', info: '#4C9EFF',
+      gold: '#7C5CFC', flagBlue: '#4C9EFF',
+      cardShadow: 'none',
+    },
+    light: {
+      bg: '#F7F7F9', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E3E4E8',
+      text: '#101114', textMuted: '#6B6F7A', textFaint: '#9CA0AA',
+      primary: '#6A46F2', primaryText: '#FFFFFF',
+      success: '#16A672', danger: '#E0433D', dangerStrong: '#C22E28', warning: '#C97A0A', info: '#2F7DE0',
+      gold: '#6A46F2', flagBlue: '#2F7DE0',
+      cardShadow: 'none',
+    },
+  },
+  sunset: {
+    label: 'Sunset',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Mulish:wght@400;500;600;700&display=swap',
+      heading: "'DM Sans', sans-serif",
+      body: "'Mulish', sans-serif",
+    },
+    light: {
+      bg: 'linear-gradient(160deg, #FFD9A0 0%, #FF9A76 45%, #FF6F91 100%)',
+      surface: 'rgba(255,255,255,0.82)', surfaceRaised: 'rgba(255,255,255,0.82)', border: 'rgba(255,255,255,0.9)',
+      text: '#4A2A2E', textMuted: '#8C6B6E', textFaint: '#B79599',
+      primary: '#E8503A', primaryText: '#FFFFFF',
+      success: '#3FA66B', danger: '#D6455B', dangerStrong: '#B22E42', warning: '#C97A1E', info: '#D98A3D',
+      gold: '#E8503A', flagBlue: '#D98A3D',
+      cardShadow: '0 10px 28px rgba(180,80,60,.2)',
+    },
+    dark: {
+      bg: 'linear-gradient(160deg, #2B1B3D 0%, #5A2A4D 45%, #8A3B4D 100%)',
+      surface: 'rgba(20,10,25,0.55)', surfaceRaised: 'rgba(20,10,25,0.55)', border: 'rgba(255,255,255,0.1)',
+      text: '#FCE9E4', textMuted: '#C9A7B0', textFaint: '#95737C',
+      primary: '#FF8A5B', primaryText: '#2B1B3D',
+      success: '#5FCB8D', danger: '#FF6B81', dangerStrong: '#E0435C', warning: '#E8A34A', info: '#FFB37A',
+      gold: '#FF8A5B', flagBlue: '#FFB37A',
+      cardShadow: '0 10px 28px rgba(0,0,0,.35)',
+    },
+    hasGlow: true,
+  },
+  realmadrid: {
+    label: 'Real Madrid',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap',
+      heading: "'Bebas Neue', sans-serif",
+      body: "'Barlow', sans-serif",
+    },
+    light: {
+      bg: '#FFFFFF', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E2E6ED',
+      text: '#14213D', textMuted: '#6B7690', textFaint: '#9CA6BC',
+      primary: '#0A3D91', primaryText: '#FFFFFF',
+      success: '#2E8B57', danger: '#D6433C', dangerStrong: '#B4291E', warning: '#D9A404', info: '#0A3D91',
+      gold: '#D9A404', flagBlue: '#0A3D91',
+      cardShadow: 'none',
+    },
+    dark: {
+      bg: '#0B1330', surface: '#121B3D', surfaceRaised: '#121B3D', border: '#26315E',
+      text: '#F2F4FA', textMuted: '#8892B8', textFaint: '#5C6690',
+      primary: '#3B6FD1', primaryText: '#FFFFFF',
+      success: '#4CD68B', danger: '#FF6B6B', dangerStrong: '#FF4D3D', warning: '#F2B705', info: '#3B6FD1',
+      gold: '#F2B705', flagBlue: '#3B6FD1',
+      cardShadow: 'none',
+    },
+    fanId: 'realmadrid',
+  },
+  cuba: {
+    label: 'Cuba',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Pacifico&family=Rubik:wght@400;500;600;700&display=swap',
+      heading: "'Pacifico', cursive",
+      body: "'Rubik', sans-serif",
+    },
+    light: {
+      bg: '#FFF7EC', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E3DCC9',
+      text: '#1F2A44', textMuted: '#8C8471', textFaint: '#BFB79E',
+      primary: '#E4402E', primaryText: '#FFFFFF',
+      success: '#2E9E62', danger: '#E4402E', dangerStrong: '#B82E1F', warning: '#D9930A', info: '#1FA9A0',
+      gold: '#D9930A', flagBlue: '#1B4B93',
+      cardShadow: '0 8px 20px rgba(31,42,68,.08)',
+    },
+    dark: {
+      bg: '#0F2A3D', surface: '#1E4459', surfaceRaised: '#1E4459', border: '#2C566E',
+      text: '#F5F0E4', textMuted: '#9DB3BE', textFaint: '#6B8590',
+      primary: '#FF6B5B', primaryText: '#FFFFFF',
+      success: '#4FC98A', danger: '#FF6B5B', dangerStrong: '#D9432E', warning: '#E8A83A', info: '#3FD6C6',
+      gold: '#F5C542', flagBlue: '#4A8FE0',
+      cardShadow: '0 8px 20px rgba(0,0,0,.3)',
+    },
+    fanId: 'cuba',
+  },
+  brazil: {
+    label: 'Brazil',
+    fonts: {
+      href: 'https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap',
+      heading: "'Baloo 2', sans-serif",
+      body: "'Poppins', sans-serif",
+    },
+    light: {
+      bg: '#FFFDF5', surface: '#FFFFFF', surfaceRaised: '#FFFFFF', border: '#E3EFE0',
+      text: '#0A2E52', textMuted: '#748577', textFaint: '#A8B8A6',
+      primary: '#FFCC29', primaryText: '#0A2E52',
+      success: '#00A859', danger: '#E2543D', dangerStrong: '#C23D28', warning: '#D9930A', info: '#0A2E52',
+      gold: '#F2B705', flagBlue: '#0A2E52',
+      cardShadow: 'none',
+    },
+    dark: {
+      bg: '#081C2E', surface: '#0F2A3F', surfaceRaised: '#0F2A3F', border: '#1F4661',
+      text: '#F2F7F2', textMuted: '#8FA8A0', textFaint: '#5C7A72',
+      primary: '#FFCC29', primaryText: '#0A2E52',
+      success: '#2ECC71', danger: '#FF6B5B', dangerStrong: '#E0392A', warning: '#E0A83A', info: '#4A90D2',
+      gold: '#FFCC29', flagBlue: '#4A90D2',
+      cardShadow: 'none',
+    },
+    fanId: 'brazil',
+  },
+}
+
+export const DEFAULT_THEME = { id: 'deepwork', mode: 'dark' }
