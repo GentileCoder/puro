@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useI18n } from '../i18n'
+import AppLogo from '../components/layout/AppLogo.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -33,6 +34,7 @@ async function handleSubmit() {
 <template>
   <div id="loginOverlay">
     <div id="loginBox">
+      <AppLogo :size="48" style="margin-bottom: 8px" />
       <h2>PURO</h2>
       <div class="login-sub">Place U R Order</div>
       <div style="display: flex; justify-content: center; gap: 4px; margin-bottom: 14px">

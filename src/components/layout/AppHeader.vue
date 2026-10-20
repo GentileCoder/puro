@@ -5,6 +5,7 @@ import { usePuroStore } from '../../stores/puro'
 import { useI18n } from '../../i18n'
 import { fanIdFor } from '../../theme/applyTheme'
 import ThemeSettingsModal from './ThemeSettingsModal.vue'
+import AppLogo from './AppLogo.vue'
 
 const auth = useAuthStore()
 const puro = usePuroStore()
@@ -34,7 +35,8 @@ function handleLogout() {
 
 <template>
   <header>
-    <div style="display: flex; align-items: baseline; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <AppLogo :size="26" />
       <h1>PURO</h1>
       <span v-if="fanId === 'realmadrid'" class="fan-row">
         <span class="fan-star">★★★</span> Hala Madrid
