@@ -32,8 +32,8 @@ async function handleCreate() {
   try {
     await createUser(email.value.trim(), password.value, role.value)
     emit('created')
-  } catch {
-    error.value = t('users.error_create')
+  } catch (e) {
+    error.value = e.message || t('users.error_create')
   }
 }
 </script>

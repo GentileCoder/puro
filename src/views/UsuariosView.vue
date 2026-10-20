@@ -34,8 +34,8 @@ onMounted(loadUsers)
 async function handleRoleChange(uid, role) {
   try {
     await updateUserRole(uid, role)
-  } catch {
-    alert(t('users.error_role'))
+  } catch (e) {
+    alert(e.message || t('users.error_role'))
     loadUsers()
   }
 }
@@ -52,8 +52,8 @@ async function confirmDelete(uid) {
   try {
     await deleteUser(uid)
     loadUsers()
-  } catch {
-    alert(t('users.error_delete'))
+  } catch (e) {
+    alert(e.message || t('users.error_delete'))
   } finally {
     confirmingUid.value = null
   }

@@ -3,6 +3,7 @@ import os
 import functions_framework
 import firebase_admin
 from firebase_admin import auth as firebase_auth
+from firebase_admin import exceptions as firebase_exceptions
 from google.cloud import storage
 
 BUCKET_NAME = "puro-data"
@@ -67,13 +68,24 @@ def organizer(request):
 
         if request.method == "POST":
             body = request.get_json()
-            user = firebase_auth.create_user(email=body["email"], password=body["password"])
+            try:
+                user = firebase_auth.create_user(email=body["email"], password=body["password"])
+            except firebase_auth.EmailAlreadyExistsError:
+                return (json.dumps({"error": "That email is already in use"}), 400, JSON_HEADERS)
+            except (ValueError, firebase_exceptions.FirebaseError) as e:
+                # Covers e.g. a password under Firebase's 6-character minimum,
+                # or a malformed email — without this, any Admin SDK rejection
+                # crashed the whole handler into a raw, message-less 500.
+                return (json.dumps({"error": str(e)}), 400, JSON_HEADERS)
             firebase_auth.set_custom_user_claims(user.uid, {"role": body.get("role", "staff")})
             return (json.dumps({"uid": user.uid}), 200, JSON_HEADERS)
 
         if request.method == "PUT":
             body = request.get_json()
-            target = firebase_auth.get_user(body["uid"])
+            try:
+                target = firebase_auth.get_user(body["uid"])
+            except firebase_auth.UserNotFoundError:
+                return (json.dumps({"error": "User not found"}), 404, JSON_HEADERS)
             if target.email == PROTECTED_ADMIN_EMAIL and body["role"] != "admin":
                 return (json.dumps({"error": "This account's role can't be changed"}), 403, JSON_HEADERS)
             firebase_auth.set_custom_user_claims(body["uid"], {"role": body["role"]})
@@ -81,7 +93,10 @@ def organizer(request):
 
         if request.method == "DELETE":
             body = request.get_json()
-            target = firebase_auth.get_user(body["uid"])
+            try:
+                target = firebase_auth.get_user(body["uid"])
+            except firebase_auth.UserNotFoundError:
+                return (json.dumps({"error": "User not found"}), 404, JSON_HEADERS)
             if target.email == PROTECTED_ADMIN_EMAIL:
                 return (json.dumps({"error": "This account can't be deleted"}), 403, JSON_HEADERS)
             firebase_auth.delete_user(body["uid"])
