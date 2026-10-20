@@ -80,7 +80,8 @@ function handleCreated() {
           <div style="font-size: 11px; color: #888; margin-top: 2px">UID: {{ u.uid }}</div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center">
-          <select :value="u.role" @change="handleRoleChange(u.uid, $event.target.value)">
+          <span v-if="u.email === PROTECTED_ADMIN_EMAIL" style="font-size: 12px; color: #888">admin</span>
+          <select v-else :value="u.role" @change="handleRoleChange(u.uid, $event.target.value)">
             <option value="admin">admin</option>
             <option value="staff">staff</option>
             <option value="manager">manager</option>

@@ -9,10 +9,11 @@ BUCKET_NAME = "puro-data"
 FILE_NAME = "puro.json"
 
 # Break-glass account that administers the gentilecoder GCP project itself
-# (Console/gcloud/firebase-tools) — never deletable through this API, even by
-# another admin, since losing it means losing infrastructure access, not just
-# app access. The UI already hides the delete button for it; this is the
-# actual enforcement, since the UI guard alone doesn't stop a direct API call.
+# (Console/gcloud/firebase-tools) — never deletable or demotable through this
+# API, even by another admin, since losing it means losing infrastructure
+# access, not just app access. The UI already hides the delete button and
+# role selector for it; this is the actual enforcement, since the UI guard
+# alone doesn't stop a direct API call.
 PROTECTED_ADMIN_EMAIL = "gentile.leon0511@gmail.com"
 
 CORS = {
@@ -72,6 +73,9 @@ def organizer(request):
 
         if request.method == "PUT":
             body = request.get_json()
+            target = firebase_auth.get_user(body["uid"])
+            if target.email == PROTECTED_ADMIN_EMAIL and body["role"] != "admin":
+                return (json.dumps({"error": "This account's role can't be changed"}), 403, JSON_HEADERS)
             firebase_auth.set_custom_user_claims(body["uid"], {"role": body["role"]})
             return (json.dumps({"ok": True}), 200, JSON_HEADERS)
 
