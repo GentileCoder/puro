@@ -45,10 +45,7 @@ npm run build
 npx firebase-tools deploy --only hosting
 ```
 
-First time: `npx firebase-tools login`, then create the Hosting site (already configured in `firebase.json` as `placeyourorder`):
-```bash
-npx firebase-tools hosting:sites:create placeyourorder --project gentilecoder
-```
+The Hosting site `placeurorder` (configured in `firebase.json`) is already created — `https://placeurorder.web.app`.
 
 ## Roles
 
