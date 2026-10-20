@@ -37,13 +37,17 @@
   --color-primary-hover: color-mix(in srgb, var(--t-primary) 85%, white);
   --color-primary-text: var(--t-primary-text);
 
+  /* Mixed toward a fixed black anchor, not --t-surface — mixing toward surface
+     gave a dark, muted chip in dark themes (surface is near-black there) but a
+     pale, low-contrast one in light themes (surface is near-white there). A
+     fixed anchor keeps the "dark chip, bright text" look consistent in both. */
   --color-success-fg: var(--t-success);
-  --color-success-bg: color-mix(in srgb, var(--t-success) 18%, var(--t-surface));
+  --color-success-bg: color-mix(in srgb, var(--t-success) 30%, black);
   --color-danger-fg: var(--t-danger);
-  --color-danger-bg: color-mix(in srgb, var(--t-danger) 18%, var(--t-surface));
+  --color-danger-bg: color-mix(in srgb, var(--t-danger) 30%, black);
   --color-danger-strong: var(--t-danger-strong);
   --color-warning-fg: var(--t-warning);
-  --color-warning-bg: color-mix(in srgb, var(--t-warning) 18%, var(--t-surface));
+  --color-warning-bg: color-mix(in srgb, var(--t-warning) 30%, black);
   --color-info: var(--t-info);
   --color-gold: var(--t-gold);
   --color-flag-blue: var(--t-flag-blue);
