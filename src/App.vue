@@ -9,12 +9,20 @@ import AppHeader from './components/layout/AppHeader.vue'
 import AppNav from './components/layout/AppNav.vue'
 import ThemeAccent from './components/layout/ThemeAccent.vue'
 import BlockedNoBusiness from './components/layout/BlockedNoBusiness.vue'
+import { useI18n } from './i18n'
 
 const route = useRoute()
 const auth = useAuthStore()
 const puro = usePuroStore()
 const business = useBusinessStore()
+const { t } = useI18n()
 const showChrome = computed(() => !route.meta.public && !!auth.user && !business.blocked)
+// Admin, logged in, but hasn't created a business yet — the header's "+" is
+// their way out of this, so unlike BlockedNoBusiness this keeps AppHeader
+// visible instead of replacing the whole screen.
+const needsFirstBusiness = computed(() =>
+  showChrome.value && auth.role === 'admin' && !business.activeBusinessId && business.businesses.length === 0,
+)
 
 // Resolves which business is active (admin: their last-used/first business;
 // non-admin: their assigned businessId, or business.blocked) every time
@@ -56,7 +64,15 @@ watch(
   </template>
   <template v-else>
     <AppHeader v-if="showChrome" />
-    <AppNav v-if="showChrome" />
-    <RouterView />
+    <template v-if="needsFirstBusiness">
+      <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 80px 20px">
+        <h2 style="font-size: 16px">{{ t('business.onboarding_title') }}</h2>
+        <p style="font-size: 13px; color: var(--color-text-muted); max-width: 360px">{{ t('business.onboarding_body') }}</p>
+      </div>
+    </template>
+    <template v-else>
+      <AppNav v-if="showChrome" />
+      <RouterView />
+    </template>
   </template>
 </template>

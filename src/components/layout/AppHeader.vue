@@ -60,18 +60,21 @@ async function handleLogout() {
       </span>
       <template v-if="isAdmin">
         <select
+          v-if="business.businesses.length"
           :value="business.activeBusinessId"
           style="font-size: 12px; padding: 3px 6px"
           @change="business.selectBusiness($event.target.value)"
         >
           <option v-for="b in business.businesses" :key="b.id" :value="b.id">{{ b.name }}</option>
         </select>
-        <button class="hbtn" :title="t('business.new')" @click="createBusinessOpen = true">+</button>
+        <button class="hbtn" :class="{ 'hbtn-primary': !business.businesses.length }" @click="createBusinessOpen = true">
+          {{ business.businesses.length ? '+' : t('business.new') }}
+        </button>
       </template>
     </div>
     <span>{{ headerDate }}</span>
     <div style="display: flex; align-items: center; gap: 10px">
-      <span style="font-size: 12px; opacity: 0.8">
+      <span v-if="business.activeBusinessId" style="font-size: 12px; opacity: 0.8">
         <span class="sync-dot" :style="{ background: STATUS_COLOR[puro.syncStatus] }"></span>{{ t('sync.' + puro.syncStatus) }}
       </span>
       <div style="display: flex; gap: 3px">
@@ -125,6 +128,12 @@ async function handleLogout() {
   padding: 4px 10px;
   font-size: 12px;
   cursor: pointer;
+}
+.hbtn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-text);
+  font-weight: 600;
 }
 .fan-row { font-size: 11px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .fan-star { color: var(--color-gold); font-size: 11px; letter-spacing: 1px; }
