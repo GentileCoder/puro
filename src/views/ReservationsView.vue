@@ -94,7 +94,7 @@ function handleSave(payload) {
       :active-section="activeSection"
       :reservations="puro.reservations"
       :date="filterDate"
-      :restaurant-hours="puro.restaurantHours"
+      :restaurant-hours="puro.business.hours"
       :all-tables="allTablesList"
       @toggle="puro.toggleResStatus"
       @delete="puro.deleteReservation"

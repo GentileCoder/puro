@@ -11,6 +11,7 @@ const routes = [
   { path: '/articulos', name: 'Articulos', component: () => import('../views/ArticulosView.vue'), meta: { roles: ['admin', 'manager'] } },
   { path: '/historial', name: 'Historial', component: () => import('../views/HistorialView.vue'), meta: { roles: ['admin', 'manager'] } },
   { path: '/plan', name: 'Plan', component: () => import('../views/PlanView.vue'), meta: { roles: ['admin', 'staff', 'manager'] } },
+  { path: '/negocio', name: 'Business', component: () => import('../views/BusinessView.vue'), meta: { roles: ['admin', 'manager'] } },
   { path: '/usuarios', name: 'Usuarios', component: () => import('../views/UsuariosView.vue'), meta: { roles: ['admin'] } },
 ]
 

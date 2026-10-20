@@ -5,14 +5,11 @@ import { useI18n } from '../../i18n'
 const props = defineProps({
   open: { type: Boolean, required: true },
   sections: { type: Array, required: true },
-  restaurantHours: { type: Object, required: true },
 })
 const emit = defineEmits(['close', 'save'])
 const { t } = useI18n()
 
 const draft = ref([])
-const openTime = ref('')
-const closeTime = ref('')
 const newSectionName = ref('')
 
 watch(
@@ -20,8 +17,6 @@ watch(
   (isOpen) => {
     if (!isOpen) return
     draft.value = JSON.parse(JSON.stringify(props.sections))
-    openTime.value = props.restaurantHours.open
-    closeTime.value = props.restaurantHours.close
     newSectionName.value = ''
   },
 )
@@ -68,7 +63,7 @@ function handleSave() {
         .filter((tb) => tb.label.trim() !== ''),
     }))
     .filter((sec) => sec.name.trim() !== '')
-  emit('save', cleaned, { open: openTime.value, close: closeTime.value })
+  emit('save', cleaned)
 }
 </script>
 
@@ -77,10 +72,6 @@ function handleSave() {
     <div class="modal" style="width: 460px">
       <h2>{{ t('table_modal.title') }}</h2>
       <div class="modal-sub">{{ t('table_modal.subtitle') }}</div>
-      <div class="hours-settings-row">
-        <div><label>{{ t('settings.open_time') }}</label><input v-model="openTime" type="time"></div>
-        <div><label>{{ t('settings.close_time') }}</label><input v-model="closeTime" type="time"></div>
-      </div>
       <div style="max-height: 320px; overflow-y: auto">
         <div v-for="sec in draft" :key="sec.id" class="settings-section">
           <div class="settings-section-header">

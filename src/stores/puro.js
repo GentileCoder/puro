@@ -52,6 +52,24 @@ function defaultArticulos() {
   ]
 }
 
+// ISO weekday 1=Mon..7=Sun. Matches the app's original hardcoded Tue-Sat,
+// 3-slots-a-day schedule — the default for a fresh install, and also what
+// an already-live blob (pre-dating the Business tab) gets migrated to.
+function defaultBusiness() {
+  return {
+    openDays: [2, 3, 4, 5, 6],
+    hours: { open: '12:00', close: '23:00' },
+    staffing: {
+      2: ['fijo', 'springer', 'springer'],
+      3: ['fijo', 'springer', 'springer'],
+      4: ['fijo', 'springer', 'springer'],
+      5: ['fijo', 'fijo', 'springer'],
+      6: ['fijo', 'fijo', 'springer'],
+    },
+    frequency: 'weekly',
+  }
+}
+
 // This store matches the backend's actual persistence unit — one JSON blob,
 // one GET/POST — rather than one Pinia store per domain. See
 // docs/app-development/01-frontend-vue/stack-and-structure.md.
@@ -61,8 +79,13 @@ export const usePuroStore = defineStore('puro', () => {
   const categories = ref(defaultCategories())
   const articulos = ref(defaultArticulos())
   const openTables = reactive({})
-  const planData = reactive({})
-  const restaurantHours = ref({ open: '12:00', close: '23:00' })
+  const business = ref(defaultBusiness())
+  // planDraft: what admin/manager edit. planPublished: what staff always see.
+  // Only lockPlan() copies draft -> published; see stores/puro.js's "Plan"
+  // section below for why this replaces the old single planData blob.
+  const planDraft = reactive({})
+  const planPublished = reactive({})
+  const planLocked = ref(true)
   const theme = ref({ ...DEFAULT_THEME })
 
   // In-memory only, intentionally never persisted to the cloud blob —
@@ -79,9 +102,11 @@ export const usePuroStore = defineStore('puro', () => {
       reservations: reservations.value,
       categories: categories.value,
       articulos: articulos.value,
-      planData: { ...planData },
+      business: business.value,
+      planDraft: { ...planDraft },
+      planPublished: { ...planPublished },
+      planLocked: planLocked.value,
       openTables: { ...openTables },
-      restaurantHours: restaurantHours.value,
       theme: theme.value,
     }
   }
@@ -107,10 +132,33 @@ export const usePuroStore = defineStore('puro', () => {
       if (d.reservations) reservations.value = d.reservations
       if (d.categories && d.categories.length) categories.value = d.categories
       if (d.articulos && d.articulos.length) articulos.value = d.articulos
-      if (d.planData) Object.assign(planData, d.planData)
       if (d.openTables) Object.assign(openTables, d.openTables)
-      if (d.restaurantHours) restaurantHours.value = d.restaurantHours
       if (d.theme && d.theme.id) theme.value = d.theme
+
+      // --- Business tab migration ---
+      // Pre-dates the Business tab: only restaurantHours existed. Keep the
+      // rest of the defaults (Tue-Sat, 3-slots-a-day) so the already-live
+      // Plan grid doesn't suddenly go empty.
+      if (d.business) {
+        business.value = d.business
+      } else if (d.restaurantHours) {
+        business.value = { ...defaultBusiness(), hours: d.restaurantHours }
+      }
+
+      // --- Plan draft/lock migration ---
+      // Pre-dates the draft/lock workflow: only planData existed. Seed both
+      // draft and published from it and treat it as already-locked — this
+      // preserves exactly what's currently visible; admin/manager unlock
+      // whenever they're ready to start editing a new draft.
+      if (d.planDraft || d.planPublished) {
+        if (d.planDraft) Object.assign(planDraft, d.planDraft)
+        if (d.planPublished) Object.assign(planPublished, d.planPublished)
+        if (typeof d.planLocked === 'boolean') planLocked.value = d.planLocked
+      } else if (d.planData) {
+        Object.assign(planDraft, d.planData)
+        Object.assign(planPublished, d.planData)
+        planLocked.value = true
+      }
       syncStatus.value = 'synced'
     } catch {
       syncStatus.value = 'offline'
@@ -137,12 +185,12 @@ export const usePuroStore = defineStore('puro', () => {
     persist()
   }
 
-  // --- Table settings (sections/tables/hours) ---
+  // --- Table settings (sections/tables) ---
+  // Hours moved to Business settings below — physical table/section layout
+  // and business policy (hours) are different concerns.
 
-  function saveTableSettings(newSections, hours) {
+  function saveTableSettings(newSections) {
     sections.value = newSections
-    if (hours.open) restaurantHours.value.open = hours.open
-    if (hours.close) restaurantHours.value.close = hours.close
     persist()
   }
 
@@ -235,11 +283,30 @@ export const usePuroStore = defineStore('puro', () => {
     persist()
   }
 
-  // --- Plan ---
+  // --- Business settings (admin/manager; drives the Plan tab's grid) ---
 
-  function savePlan(entries) {
-    Object.keys(planData).forEach((k) => delete planData[k])
-    Object.assign(planData, entries)
+  function saveBusiness(newBusiness) {
+    business.value = newBusiness
+    persist()
+  }
+
+  // --- Plan ---
+  // planDraft is mutated directly by the view (same pattern openTables
+  // already used) — call persist() after each edit from there. lockPlan()
+  // is the only thing that ever touches planPublished, which is what keeps
+  // this from reintroducing the old "save wipes other weeks" bug: there's
+  // no per-save wipe-and-replace anymore, draft just accumulates, and
+  // locking is an explicit "publish everything currently drafted" action.
+
+  function lockPlan() {
+    Object.keys(planPublished).forEach((k) => delete planPublished[k])
+    Object.assign(planPublished, planDraft)
+    planLocked.value = true
+    persist()
+  }
+
+  function unlockPlan() {
+    planLocked.value = false
     persist()
   }
 
@@ -249,8 +316,10 @@ export const usePuroStore = defineStore('puro', () => {
     categories,
     articulos,
     openTables,
-    planData,
-    restaurantHours,
+    business,
+    planDraft,
+    planPublished,
+    planLocked,
     theme,
     history24,
     syncStatus,
@@ -271,6 +340,8 @@ export const usePuroStore = defineStore('puro', () => {
     discardEmptyOrder,
     closeTable,
     purgeHistory,
-    savePlan,
+    saveBusiness,
+    lockPlan,
+    unlockPlan,
   }
 })

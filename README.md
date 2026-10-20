@@ -59,11 +59,22 @@ The Hosting site `placeurorder` (configured in `firebase.json`) is already creat
 | Artículos | ✅ | ❌ | ✅ |
 | Historial | ✅ | ❌ | ✅ |
 | Plan | ✅ (edit) | view-only | ✅ (edit) |
+| Negocio | ✅ | ❌ | ✅ |
 | Usuarios | ✅ | ❌ | ❌ |
 
 Users are managed from the Usuarios tab (admin only), which calls the worker's `/users` endpoints
 (backed by the Identity Platform Admin SDK — see `docs/Authentication_Implementation_Guide.md` for
 the backend side, already deployed).
+
+### Plan: draft, lock, publish
+
+The Plan tab's staffing grid is generated from the Negocio tab's config (opening days, staff per
+day, planning frequency), not hardcoded. Admin/manager edit a **draft**; staff always see the last
+**published** version, never the draft. Editing is only possible while the plan is unlocked;
+clicking **Lock & publish** copies the draft to what staff see and freezes it until explicitly
+unlocked again. The grid itself adapts to the configured frequency — one week at a time (weekly),
+two weeks (biweekly), or a full calendar month (monthly/quarterly — identical layout, the only
+difference is the expected replan cadence).
 
 ## Theme
 
@@ -87,6 +98,9 @@ src/
   utils/                      pure helpers (time, tables, reservations, plan)
   i18n/                       es/en/de dictionary + composable
   views/, components/         one view per tab, thin; shared UI in components/
+    views/BusinessView.vue      opening days/hours/staffing/frequency config (admin+manager)
+    components/plan/            PlanWeekRow.vue — the reusable week-row the Plan tab composes
+                                 per frequency (1 row weekly, 2 biweekly, N for a month)
   styles/                     tokens.css (palette) + base.css + utilities.css
 ```
 
@@ -95,6 +109,3 @@ src/
 - History (Historial) is in-memory only — cleared on page refresh, not persisted.
 - No offline support — requires connectivity for the worker and Identity Platform.
 - The entire data blob is re-saved on every change (no partial updates), debounced ~800ms client-side.
-- **Plan (weekly schedule) note:** saving the Plan tab replaces the *entire* stored schedule with
-  only the currently-viewed week's entries — a pre-existing behavior from the legacy app, not
-  introduced by this migration. Worth a deliberate product decision before it causes real data loss.

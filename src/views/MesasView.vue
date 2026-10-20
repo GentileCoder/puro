@@ -83,8 +83,8 @@ function handlePay(method) {
   closeOrder()
 }
 
-function handleSaveSettings(newSections, hours) {
-  puro.saveTableSettings(newSections, hours)
+function handleSaveSettings(newSections) {
+  puro.saveTableSettings(newSections)
   settingsOpen.value = false
   activeSection.value = 'all'
 }
@@ -137,7 +137,6 @@ function handleSaveSettings(newSections, hours) {
     <TableSettingsModal
       :open="settingsOpen"
       :sections="puro.sections"
-      :restaurant-hours="puro.restaurantHours"
       @close="settingsOpen = false"
       @save="handleSaveSettings"
     />

@@ -21,8 +21,16 @@ function getLangLocale() {
   return LOCALES[currentLang.value] || 'es-ES'
 }
 
+// Index 0=Monday..6=Sunday, matching ISO weekday numbers (1-7) minus 1.
+const DAY_KEYS = ['day.mon', 'day.tue', 'day.wed', 'day.thu', 'day.fri', 'day.sat', 'day.sun']
+
 function getDayNames() {
-  return [t('day.tue'), t('day.wed'), t('day.thu'), t('day.fri'), t('day.sat')]
+  return DAY_KEYS.map((key) => t(key))
+}
+
+// isoWeekday: 1=Monday..7=Sunday
+function getDayName(isoWeekday) {
+  return t(DAY_KEYS[isoWeekday - 1])
 }
 
 function slotLabel(slot) {
@@ -41,6 +49,7 @@ export function useI18n() {
     setLanguage,
     getLangLocale,
     getDayNames,
+    getDayName,
     slotLabel,
   }
 }

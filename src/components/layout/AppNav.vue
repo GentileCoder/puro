@@ -12,6 +12,7 @@ const ALL_TABS = [
   { name: 'Articulos', label: 'tab.articles', roles: ['admin', 'manager'] },
   { name: 'Historial', label: 'tab.history', roles: ['admin', 'manager'] },
   { name: 'Plan', label: 'tab.plan', roles: ['admin', 'staff', 'manager'] },
+  { name: 'Business', label: 'tab.business', roles: ['admin', 'manager'] },
   { name: 'Usuarios', label: 'tab.users', roles: ['admin'] },
 ]
 
