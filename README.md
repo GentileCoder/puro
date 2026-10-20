@@ -1,5 +1,7 @@
 # PURO
 
+<img src="public/logo.svg" width="64" height="64" alt="PURO logo" />
+
 A restaurant management PWA for El Toro. Vue 3 + Vite + Pinia frontend, Google Cloud Identity
 Platform (= Firebase Auth) for login and roles, Firebase Hosting, and a Python Cloud Run worker
 (`puro-worker`) proxying a single JSON blob in Google Cloud Storage (`puro-data` bucket).
