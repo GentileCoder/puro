@@ -41,10 +41,11 @@ function singleInfo(tbl) {
   }
 }
 
+// Fixed white text — see TableGrid.vue's statusColors() for why.
 function statusColors(isOpen) {
   return isOpen
-    ? { background: 'var(--color-danger-bg)', color: 'var(--color-danger-fg)' }
-    : { background: 'var(--color-success-bg)', color: 'var(--color-success-fg)' }
+    ? { background: 'var(--color-danger-bg)', color: '#F5F5F5' }
+    : { background: 'var(--color-success-bg)', color: '#F5F5F5' }
 }
 </script>
 

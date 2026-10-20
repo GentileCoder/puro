@@ -24,11 +24,14 @@ function reservationsFor(tableId) {
     .sort((a, b) => a.from.localeCompare(b.from))
 }
 
+// Fixed white text, not the theme accent color — the background already
+// carries the status color, and a muted accent (e.g. Paper's grayish green)
+// as text on its own dark-mixed chip isn't reliably legible at this size.
 function statusColors(tableId) {
   const status = resStatus(tableId, props.date, props.reservations)
-  if (status === 'free') return { background: 'var(--color-success-bg)', color: 'var(--color-success-fg)' }
-  if (status === 'once') return { background: 'var(--color-warning-bg)', color: 'var(--color-warning-fg)' }
-  return { background: 'var(--color-danger-bg)', color: 'var(--color-danger-fg)' }
+  if (status === 'free') return { background: 'var(--color-success-bg)', color: '#F5F5F5' }
+  if (status === 'once') return { background: 'var(--color-warning-bg)', color: '#F5F5F5' }
+  return { background: 'var(--color-danger-bg)', color: '#F5F5F5' }
 }
 </script>
 
