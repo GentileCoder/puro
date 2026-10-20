@@ -40,14 +40,18 @@
   /* Mixed toward a fixed black anchor, not --t-surface — mixing toward surface
      gave a dark, muted chip in dark themes (surface is near-black there) but a
      pale, low-contrast one in light themes (surface is near-white there). A
-     fixed anchor keeps the "dark chip, bright text" look consistent in both. */
+     fixed anchor keeps the "dark chip, bright text" look consistent in both.
+     50%, not a lighter tint: table-status text is now fixed white (not this
+     fg token) regardless, so the ratio is free to favor hue separation
+     between success/warning/danger instead of being capped by what a
+     theme-colored foreground could still read against. */
   --color-success-fg: var(--t-success);
-  --color-success-bg: color-mix(in srgb, var(--t-success) 30%, black);
+  --color-success-bg: color-mix(in srgb, var(--t-success) 50%, black);
   --color-danger-fg: var(--t-danger);
-  --color-danger-bg: color-mix(in srgb, var(--t-danger) 30%, black);
+  --color-danger-bg: color-mix(in srgb, var(--t-danger) 50%, black);
   --color-danger-strong: var(--t-danger-strong);
   --color-warning-fg: var(--t-warning);
-  --color-warning-bg: color-mix(in srgb, var(--t-warning) 30%, black);
+  --color-warning-bg: color-mix(in srgb, var(--t-warning) 50%, black);
   --color-info: var(--t-info);
   --color-gold: var(--t-gold);
   --color-flag-blue: var(--t-flag-blue);
