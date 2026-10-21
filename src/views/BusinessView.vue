@@ -10,7 +10,7 @@ const { t, getDayName } = useI18n()
 const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7]
 const FREQUENCIES = ['weekly', 'biweekly', 'monthly', 'quarterly']
 
-const draft = reactive({ openDays: [], hours: { open: '', close: '' }, staffing: {}, frequency: 'weekly' })
+const draft = reactive({ openDays: [], hours: { open: '', close: '' }, staffing: {}, frequency: 'weekly', planMode: 'manager' })
 const saved = ref(false)
 
 function seedFromStore() {
@@ -18,6 +18,7 @@ function seedFromStore() {
   draft.hours = { ...puro.business.hours }
   draft.staffing = JSON.parse(JSON.stringify(puro.business.staffing))
   draft.frequency = puro.business.frequency
+  draft.planMode = puro.business.planMode || 'manager'
 }
 seedFromStore()
 // Re-seed once the store's initial load actually resolves, in case this
@@ -52,6 +53,7 @@ function handleSave() {
     hours: { ...draft.hours },
     staffing: JSON.parse(JSON.stringify(draft.staffing)),
     frequency: draft.frequency,
+    planMode: draft.planMode,
   })
   saved.value = true
   setTimeout(() => { saved.value = false }, 1500)
@@ -84,12 +86,24 @@ function handleSave() {
     </div>
 
     <div class="settings-section" style="padding: 14px; margin-top: 10px">
-      <label style="font-size: 12px; color: var(--color-text-muted); display: block; margin-bottom: 8px">{{ t('business.frequency') }}</label>
-      <select v-model="draft.frequency" style="margin-bottom: 4px">
-        <option v-for="f in FREQUENCIES" :key="f" :value="f">{{ t('business.frequency_' + f) }}</option>
-      </select>
-      <p v-if="draft.frequency === 'monthly'" style="font-size: 11px; color: var(--color-text-muted); margin-top: 6px">{{ t('business.frequency_hint_monthly') }}</p>
-      <p v-if="draft.frequency === 'quarterly'" style="font-size: 11px; color: var(--color-text-muted); margin-top: 6px">{{ t('business.frequency_hint_quarterly') }}</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+        <div>
+          <label style="font-size: 12px; color: var(--color-text-muted); display: block; margin-bottom: 8px">{{ t('business.frequency') }}</label>
+          <select v-model="draft.frequency" style="margin-bottom: 4px; width: 100%">
+            <option v-for="f in FREQUENCIES" :key="f" :value="f">{{ t('business.frequency_' + f) }}</option>
+          </select>
+          <p v-if="draft.frequency === 'monthly'" style="font-size: 11px; color: var(--color-text-muted); margin-top: 6px">{{ t('business.frequency_hint_monthly') }}</p>
+          <p v-if="draft.frequency === 'quarterly'" style="font-size: 11px; color: var(--color-text-muted); margin-top: 6px">{{ t('business.frequency_hint_quarterly') }}</p>
+        </div>
+        <div>
+          <label style="font-size: 12px; color: var(--color-text-muted); display: block; margin-bottom: 8px">{{ t('business.plan_mode') }}</label>
+          <select v-model="draft.planMode" style="margin-bottom: 4px; width: 100%">
+            <option value="manager">{{ t('business.plan_mode_manager') }}</option>
+            <option value="staff">{{ t('business.plan_mode_staff') }}</option>
+          </select>
+          <p v-if="draft.planMode === 'staff'" style="font-size: 11px; color: var(--color-text-muted); margin-top: 6px">{{ t('business.plan_mode_hint_staff') }}</p>
+        </div>
+      </div>
     </div>
 
     <div class="settings-section" style="padding: 14px; margin-top: 10px">

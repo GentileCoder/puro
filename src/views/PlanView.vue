@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { usePuroStore } from '../stores/puro'
 import { useAuthStore } from '../stores/auth'
 import { useI18n } from '../i18n'
-import { getMondayOfWeek, getWeekDates, getWeeksInMonth, deriveSlotLabels } from '../utils/plan'
+import { getMondayOfWeek, getWeekDates, getWeeksInMonth, deriveSlotLabels, planKey } from '../utils/plan'
 import PlanWeekRow from '../components/plan/PlanWeekRow.vue'
 
 const puro = usePuroStore()
@@ -11,6 +11,11 @@ const auth = useAuthStore()
 const { t, getLangLocale, getDayName } = useI18n()
 
 const canEdit = computed(() => auth.role === 'admin' || auth.role === 'manager')
+const isStaffMode = computed(() => puro.business.planMode === 'staff')
+// Staff get the interactive request UI on the draft only while it's open for
+// requests; once locked (or in Manager mode) they see the same read-only
+// published view as always.
+const showStaffRequestUi = computed(() => !canEdit.value && isStaffMode.value && !puro.planLocked)
 const offset = ref(0)
 
 // Reset navigation whenever the business-configured frequency changes —
@@ -67,6 +72,22 @@ function shift(dir) {
 function handleEdit() {
   puro.persist()
 }
+
+function handleAcceptRequest(day, slot, request) {
+  puro.acceptRequest(planKey(day.date, slot), request)
+}
+
+function handleDeclineRequest(day, slot, request) {
+  puro.declineRequest(planKey(day.date, slot), request)
+}
+
+function handleRequest(day, slot) {
+  puro.requestSlot(planKey(day.date, slot), auth.user.uid, auth.user.email)
+}
+
+function handleCancelRequest(day, slot, request) {
+  puro.cancelRequest(planKey(day.date, slot), request.uid)
+}
 </script>
 
 <template>
@@ -90,7 +111,10 @@ function handleEdit() {
         :days="week"
         :data-source="puro.planDraft"
         :editable="!puro.planLocked"
+        :requests-source="isStaffMode ? puro.planRequests : null"
         @edit="handleEdit"
+        @accept-request="handleAcceptRequest"
+        @decline-request="handleDeclineRequest"
       />
     </template>
 
@@ -100,12 +124,18 @@ function handleEdit() {
         <span style="font-size: 13px; color: #aaa">{{ periodLabel }}</span>
         <button class="week-nav-btn" @click="shift(1)">→</button>
       </div>
+      <div v-if="showStaffRequestUi" style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px">{{ t('plan.staff_request_notice') }}</div>
       <PlanWeekRow
         v-for="(week, i) in weeks"
         :key="i"
         :days="week"
-        :data-source="puro.planPublished"
+        :data-source="showStaffRequestUi ? puro.planDraft : puro.planPublished"
         :editable="false"
+        :interactive="showStaffRequestUi"
+        :requests-source="showStaffRequestUi ? puro.planRequests : null"
+        :current-uid="auth.user?.uid"
+        @request="handleRequest"
+        @cancel-request="handleCancelRequest"
       />
     </template>
   </div>

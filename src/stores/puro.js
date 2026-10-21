@@ -44,6 +44,10 @@ function defaultBusiness() {
       6: ['fijo', 'fijo', 'springer'],
     },
     frequency: 'weekly',
+    // 'manager': admin/manager types who works each slot (default, today's
+    // behavior). 'staff': staff request open slots themselves and
+    // admin/manager accepts/declines — see planRequests below.
+    planMode: 'manager',
   }
 }
 
@@ -63,6 +67,10 @@ export const usePuroStore = defineStore('puro', () => {
   const planDraft = reactive({})
   const planPublished = reactive({})
   const planLocked = ref(true)
+  // Staff mode only: pending shift requests on the draft, keyed the same way
+  // as planDraft (planKey(date, slot)) -> [{ uid, email }, ...]. See the
+  // "Plan requests (Staff mode)" section below.
+  const planRequests = reactive({})
   const theme = ref({ ...DEFAULT_THEME })
 
   // In-memory only, intentionally never persisted to the cloud blob —
@@ -87,6 +95,7 @@ export const usePuroStore = defineStore('puro', () => {
       planDraft: { ...planDraft },
       planPublished: { ...planPublished },
       planLocked: planLocked.value,
+      planRequests: { ...planRequests },
       openTables: { ...openTables },
       theme: theme.value,
     }
@@ -122,6 +131,7 @@ export const usePuroStore = defineStore('puro', () => {
     business.value = defaultBusiness()
     Object.keys(planDraft).forEach((k) => delete planDraft[k])
     Object.keys(planPublished).forEach((k) => delete planPublished[k])
+    Object.keys(planRequests).forEach((k) => delete planRequests[k])
     planLocked.value = true
     theme.value = { ...DEFAULT_THEME }
     // In-memory only regardless, but a business switch shouldn't carry the
@@ -140,6 +150,7 @@ export const usePuroStore = defineStore('puro', () => {
       if (d.business) business.value = d.business
       if (d.planDraft) Object.assign(planDraft, d.planDraft)
       if (d.planPublished) Object.assign(planPublished, d.planPublished)
+      if (d.planRequests) Object.assign(planRequests, d.planRequests)
       if (typeof d.planLocked === 'boolean') planLocked.value = d.planLocked
       syncStatus.value = 'synced'
     } catch {
@@ -292,6 +303,40 @@ export const usePuroStore = defineStore('puro', () => {
     persist()
   }
 
+  // --- Plan requests (Staff mode) ---
+  // Staff request open draft slots themselves instead of admin/manager typing
+  // names in directly; admin/manager then accepts (fills planDraft, same as
+  // if they'd typed it) or declines (just removes that one request) from the
+  // pending list. Manager-mode businesses never touch this.
+
+  function requestSlot(key, uid, email) {
+    if (planDraft[key]) return
+    if (!planRequests[key]) planRequests[key] = []
+    if (planRequests[key].some((r) => r.uid === uid)) return
+    planRequests[key].push({ uid, email })
+    persist()
+  }
+
+  function cancelRequest(key, uid) {
+    if (!planRequests[key]) return
+    planRequests[key] = planRequests[key].filter((r) => r.uid !== uid)
+    if (!planRequests[key].length) delete planRequests[key]
+    persist()
+  }
+
+  function acceptRequest(key, request) {
+    planDraft[key] = request.email
+    delete planRequests[key]
+    persist()
+  }
+
+  function declineRequest(key, request) {
+    if (!planRequests[key]) return
+    planRequests[key] = planRequests[key].filter((r) => r.uid !== request.uid)
+    if (!planRequests[key].length) delete planRequests[key]
+    persist()
+  }
+
   return {
     sections,
     reservations,
@@ -302,6 +347,7 @@ export const usePuroStore = defineStore('puro', () => {
     planDraft,
     planPublished,
     planLocked,
+    planRequests,
     theme,
     history24,
     syncStatus,
@@ -325,5 +371,9 @@ export const usePuroStore = defineStore('puro', () => {
     saveBusiness,
     lockPlan,
     unlockPlan,
+    requestSlot,
+    cancelRequest,
+    acceptRequest,
+    declineRequest,
   }
 })
