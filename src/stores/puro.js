@@ -17,9 +17,20 @@ function defaultSections() {
 }
 
 // A generic starting template, not any one business's layout — reasonable
-// to keep seeding this one.
+// to keep seeding this one. Each category can hold subcategories for
+// further grouping (e.g. "Bebida" -> "Vino"/"Cerveza"); empty by default.
 function defaultCategories() {
-  return ['Comida', 'Bebida', 'Softdrink', 'Café', 'Postre', 'Vino', 'Cerveza', 'Otro']
+  return ['Comida', 'Bebida', 'Softdrink', 'Café', 'Postre', 'Vino', 'Cerveza', 'Otro'].map((name) => ({
+    name,
+    subcategories: [],
+  }))
+}
+
+// Older saved blobs (and the seed data written before subcategories
+// existed) store categories as plain strings — coerce those into today's
+// { name, subcategories } shape instead of a one-off migration.
+function normalizeCategories(cats) {
+  return cats.map((c) => (typeof c === 'string' ? { name: c, subcategories: [] } : { subcategories: [], ...c }))
 }
 
 function defaultReservations() {
@@ -60,6 +71,14 @@ export const usePuroStore = defineStore('puro', () => {
   const categories = ref(defaultCategories())
   const articulos = ref(defaultArticulos())
   const openTables = reactive({})
+  // Purely visual layer on top of sections[].tables — table identity,
+  // ordering and the single/double-with-slots model stay exactly as they
+  // are; this just positions/shapes those same tables (by tableId) in
+  // space, alongside non-table decoration (walls/doors/windows).
+  // defaultTable: the business's own shape/size for newly placed tables
+  // (null until configured, meaning "use createTableElement()'s built-in
+  // single/double sizing" — see utils/floorplan.js).
+  const floorPlan = reactive({ elements: [], defaultTable: null })
   const business = ref(defaultBusiness())
   // planDraft: what admin/manager edit. planPublished: what staff always see.
   // Only lockPlan() copies draft -> published; see stores/puro.js's "Plan"
@@ -97,6 +116,7 @@ export const usePuroStore = defineStore('puro', () => {
       planLocked: planLocked.value,
       planRequests: { ...planRequests },
       openTables: { ...openTables },
+      floorPlan: { elements: [...floorPlan.elements], defaultTable: floorPlan.defaultTable },
       theme: theme.value,
     }
   }
@@ -128,6 +148,8 @@ export const usePuroStore = defineStore('puro', () => {
     categories.value = defaultCategories()
     articulos.value = defaultArticulos()
     Object.keys(openTables).forEach((k) => delete openTables[k])
+    floorPlan.elements = []
+    floorPlan.defaultTable = null
     business.value = defaultBusiness()
     Object.keys(planDraft).forEach((k) => delete planDraft[k])
     Object.keys(planPublished).forEach((k) => delete planPublished[k])
@@ -143,9 +165,11 @@ export const usePuroStore = defineStore('puro', () => {
       const d = await loadState(businessId)
       if (d.sections && d.sections.length) sections.value = d.sections
       if (d.reservations) reservations.value = d.reservations
-      if (d.categories && d.categories.length) categories.value = d.categories
+      if (d.categories && d.categories.length) categories.value = normalizeCategories(d.categories)
       if (d.articulos && d.articulos.length) articulos.value = d.articulos
       if (d.openTables) Object.assign(openTables, d.openTables)
+      if (d.floorPlan && d.floorPlan.elements) floorPlan.elements = d.floorPlan.elements
+      if (d.floorPlan && d.floorPlan.defaultTable) floorPlan.defaultTable = d.floorPlan.defaultTable
       if (d.theme && d.theme.id) theme.value = d.theme
       if (d.business) business.value = d.business
       if (d.planDraft) Object.assign(planDraft, d.planDraft)
@@ -187,27 +211,63 @@ export const usePuroStore = defineStore('puro', () => {
     persist()
   }
 
+  // --- Floor plan (purely visual; see the floorPlan declaration above) ---
+
+  function addFloorPlanElement(el) {
+    floorPlan.elements.push(el)
+    persist()
+  }
+
+  function updateFloorPlanElement(id, patch) {
+    const el = floorPlan.elements.find((e) => e.id === id)
+    if (!el) return
+    Object.assign(el, patch)
+    persist()
+  }
+
+  function setFloorPlanDefaultTable(patch) {
+    floorPlan.defaultTable = { shape: 'round', width: 60, height: 60, ...floorPlan.defaultTable, ...patch }
+    persist()
+  }
+
+  function removeFloorPlanElement(id) {
+    floorPlan.elements = floorPlan.elements.filter((e) => e.id !== id)
+    persist()
+  }
+
   // --- Categories & articulos ---
 
   function addCategory(name) {
-    if (!name || categories.value.includes(name)) return
-    categories.value.push(name)
+    if (!name || categories.value.some((c) => c.name === name)) return
+    categories.value.push({ name, subcategories: [] })
   }
 
   function deleteCategory(index) {
     categories.value.splice(index, 1)
   }
 
+  function addSubcategory(catIndex, name) {
+    const cat = categories.value[catIndex]
+    if (!cat || !name || cat.subcategories.includes(name)) return
+    cat.subcategories.push(name)
+  }
+
+  function deleteSubcategory(catIndex, subIndex) {
+    const cat = categories.value[catIndex]
+    if (!cat) return
+    cat.subcategories.splice(subIndex, 1)
+  }
+
   function commitCategories() {
     persist()
   }
 
-  function saveArticulo({ id, name, cat, price }) {
+  function saveArticulo({ id, name, cat, subcat, price }) {
     if (id) {
       const a = articulos.value.find((x) => x.id === id)
-      if (a) Object.assign(a, { name, cat, price })
+      if (a) Object.assign(a, { name, cat, subcat: subcat || null, price })
     } else {
-      articulos.value.push({ id: Date.now(), name, cat, price })
+      articulos.value.push({ id: Date.now(), name, cat, subcat: subcat || null, price })
     }
     persist()
   }
@@ -343,6 +403,7 @@ export const usePuroStore = defineStore('puro', () => {
     categories,
     articulos,
     openTables,
+    floorPlan,
     business,
     planDraft,
     planPublished,
@@ -358,8 +419,14 @@ export const usePuroStore = defineStore('puro', () => {
     toggleResStatus,
     deleteReservation,
     saveTableSettings,
+    addFloorPlanElement,
+    updateFloorPlanElement,
+    removeFloorPlanElement,
+    setFloorPlanDefaultTable,
     addCategory,
     deleteCategory,
+    addSubcategory,
+    deleteSubcategory,
     commitCategories,
     saveArticulo,
     deleteArticulo,

@@ -1,5 +1,6 @@
 <script setup>
 import { useI18n } from '../../i18n'
+import { formatPrice } from '../../utils/currency'
 
 defineProps({
   open: { type: Boolean, required: true },
@@ -15,7 +16,7 @@ const { t } = useI18n()
     <div class="modal" style="width: 320px; text-align: center">
       <h2>{{ t('payment_modal.title') }}</h2>
       <div class="modal-sub">{{ subtitle }}</div>
-      <div style="font-size: 28px; font-weight: 700; color: var(--color-success-fg); margin: 12px 0">€{{ total.toFixed(2) }}</div>
+      <div style="font-size: 28px; font-weight: 700; color: var(--color-success-fg); margin: 12px 0">{{ formatPrice(total) }}</div>
       <div class="pay-btns">
         <button class="pay-btn pay-ec" @click="emit('pay', 'EC')">{{ t('payment_modal.card') }}</button>
         <button class="pay-btn pay-bar" @click="emit('pay', 'Bar')">{{ t('payment_modal.cash') }}</button>

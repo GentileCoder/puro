@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { orderTotal } from '../../utils/tables'
 import { useI18n } from '../../i18n'
+import { formatPrice } from '../../utils/currency'
 
 const props = defineProps({
   title: { type: String, required: true },
@@ -80,7 +81,7 @@ function handleConfirm() {
           <div class="cat-header">{{ group.cat }}</div>
           <div v-for="a in group.items" :key="a.id" class="art-item" @click="addToOrder(a)">
             <span class="art-item-name">{{ a.name }}</span>
-            <span class="art-item-price">€{{ a.price.toFixed(2) }}</span>
+            <span class="art-item-price">{{ formatPrice(a.price) }}</span>
           </div>
         </div>
       </div>
@@ -95,11 +96,11 @@ function handleConfirm() {
               <span style="font-size: 13px; min-width: 16px; text-align: center">{{ it.qty }}</span>
               <button class="qty-btn" @click="isPending(it) ? changePending(it.id, 1) : emit('change-qty', it.id, 1)">+</button>
             </div>
-            <span class="trow-price">€{{ (it.price * it.qty).toFixed(2) }}</span>
+            <span class="trow-price">{{ formatPrice(it.price * it.qty) }}</span>
           </div>
         </div>
         <div class="ticket-footer">
-          <div class="ticket-total"><span>{{ t('tables.total') }}</span><span>€{{ orderTotal(displayItems).toFixed(2) }}</span></div>
+          <div class="ticket-total"><span>{{ t('tables.total') }}</span><span>{{ formatPrice(orderTotal(displayItems)) }}</span></div>
           <button class="btn-primary" style="width: 100%; font-size: 14px; padding: 11px; margin-bottom: 8px" @click="handleConfirm">{{ t('tables.add_to_order') }}</button>
           <button class="btn-green" style="width: 100%; font-size: 14px; padding: 11px" @click="emit('pay')">{{ t('tables.charge') }}</button>
         </div>

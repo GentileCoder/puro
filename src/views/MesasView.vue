@@ -10,12 +10,15 @@ import OrderView from '../components/mesas/OrderView.vue'
 import PayModal from '../components/mesas/PayModal.vue'
 import TableSettingsModal from '../components/mesas/TableSettingsModal.vue'
 import TableSlotPickerModal from '../components/mesas/TableSlotPickerModal.vue'
+import FloorPlanCanvas from '../components/floorplan/FloorPlanCanvas.vue'
 
 const puro = usePuroStore()
 const auth = useAuthStore()
 const { t } = useI18n()
 
 const activeSection = ref('all')
+const activeView = ref('grid')
+const floorEditMode = ref(false)
 const currentTableId = ref(null)
 const currentSlot = ref(null)
 const inOrderView = ref(false)
@@ -24,6 +27,10 @@ const settingsOpen = ref(false)
 const slotPickerTable = ref(null)
 
 const canConfigure = computed(() => auth.role === 'admin')
+// Broader than canConfigure — matches PlanView's canEdit convention, since
+// the floor plan is a layout/design decision admin and manager should both
+// be able to make, not a stricter admin-only setting like table CRUD.
+const canEditFloor = computed(() => auth.role === 'admin' || auth.role === 'manager')
 
 const currentTable = computed(() => allTables(puro.sections).find((x) => x.id === currentTableId.value) || null)
 const currentSection = computed(() => puro.sections.find((s) => s.tables.some((x) => x.id === currentTableId.value)) || null)
@@ -88,24 +95,49 @@ function handleSaveSettings(newSections) {
   settingsOpen.value = false
   activeSection.value = 'all'
 }
+
+// A brand-new floor plan is just an empty box with nothing to click — drop
+// straight into edit mode so the palette (and the "add your tables" hint)
+// is visible immediately, instead of requiring a second click to discover it.
+function openFloorView() {
+  activeView.value = 'floor'
+  if (canEditFloor.value && !puro.floorPlan.elements.length) floorEditMode.value = true
+}
 </script>
 
 <template>
   <div class="content active">
     <template v-if="!inOrderView">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px">
         <div class="legend">
           <div class="leg"><div class="leg-dot" style="background: #e87c7c"></div><span>{{ t('tables.open') }}</span></div>
           <div class="leg"><div class="leg-dot" style="background: #7ed4a7"></div><span>{{ t('tables.free') }}</span></div>
         </div>
-        <button v-if="canConfigure" class="btn-secondary" @click="settingsOpen = true">{{ t('tables.configure') }}</button>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div class="view-toggle">
+            <button class="view-btn" :class="{ active: activeView === 'grid' }" title="Grid" @click="activeView = 'grid'; floorEditMode = false">⊞</button>
+            <button class="view-btn" :class="{ active: activeView === 'floor' }" :title="t('floorplan.view_label')" @click="openFloorView">▦</button>
+          </div>
+          <button v-if="activeView === 'floor' && canEditFloor" class="btn-secondary" :class="{ 'btn-primary': floorEditMode }" @click="floorEditMode = !floorEditMode">{{ t('floorplan.edit_layout') }}</button>
+          <button v-if="canConfigure" class="btn-secondary" @click="settingsOpen = true">{{ t('tables.configure') }}</button>
+        </div>
       </div>
-      <SectionPills :sections="puro.sections" :active="activeSection" @update:active="activeSection = $event" />
-      <MesasGrid
+      <template v-if="activeView === 'grid'">
+        <SectionPills :sections="puro.sections" :active="activeSection" @update:active="activeSection = $event" />
+        <MesasGrid
+          :sections="puro.sections"
+          :active-section="activeSection"
+          :open-tables="puro.openTables"
+          @open="openOrder"
+          @open-double-picker="openDoublePicker"
+        />
+      </template>
+      <FloorPlanCanvas
+        v-else
+        :elements="puro.floorPlan.elements"
         :sections="puro.sections"
-        :active-section="activeSection"
-        :open-tables="puro.openTables"
-        @open="openOrder"
+        :editable="floorEditMode && canEditFloor"
+        @select-table="(id) => openOrder(id, null)"
         @open-double-picker="openDoublePicker"
       />
     </template>

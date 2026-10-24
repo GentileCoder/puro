@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { usePuroStore } from '../stores/puro'
 import { useI18n } from '../i18n'
+import { formatPrice } from '../utils/currency'
 
 const puro = usePuroStore()
 const { t } = useI18n()
@@ -21,7 +22,7 @@ function timeLabel(ts) {
     <div v-for="(h, i) in sorted" :key="i" class="hist-row">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px">
         <h4>{{ t('tables.table') }} {{ h.tableLabel }}</h4>
-        <span style="font-size: 16px; font-weight: 700; color: var(--color-success-fg)">€{{ h.total.toFixed(2) }}</span>
+        <span style="font-size: 16px; font-weight: 700; color: var(--color-success-fg)">{{ formatPrice(h.total) }}</span>
       </div>
       <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px">
         <span v-if="h.method === 'EC'" style="background: #1d3a6a; color: #7ab4f5; padding: 2px 8px; border-radius: 10px; font-size: 11px">{{ t('history.card') }}</span>

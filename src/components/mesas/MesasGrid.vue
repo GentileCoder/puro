@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { orderTotal } from '../../utils/tables'
 import { useI18n } from '../../i18n'
+import { formatPrice } from '../../utils/currency'
 
 const props = defineProps({
   sections: { type: Array, required: true },
@@ -23,10 +24,10 @@ function doubleInfo(tbl) {
   return {
     anyOpen: !!(wholeOrder || s0Order || s1Order),
     lines: wholeOrder
-      ? [`${t('tables.whole')} · €${orderTotal(wholeOrder.items).toFixed(2)}`]
+      ? [`${t('tables.whole')} · ${formatPrice(orderTotal(wholeOrder.items))}`]
       : [
-          `${slotNames[0]}: ${s0Order ? '€' + orderTotal(s0Order.items).toFixed(2) : t('tables.free')}`,
-          `${slotNames[1]}: ${s1Order ? '€' + orderTotal(s1Order.items).toFixed(2) : t('tables.free')}`,
+          `${slotNames[0]}: ${s0Order ? formatPrice(orderTotal(s0Order.items)) : t('tables.free')}`,
+          `${slotNames[1]}: ${s1Order ? formatPrice(orderTotal(s1Order.items)) : t('tables.free')}`,
         ],
   }
 }
@@ -36,7 +37,7 @@ function singleInfo(tbl) {
   return {
     isOpen: !!order,
     lines: order
-      ? [`€${orderTotal(order.items).toFixed(2)}`, `${order.items.length}${t('tables.items_suffix')}`]
+      ? [formatPrice(orderTotal(order.items)), `${order.items.length}${t('tables.items_suffix')}`]
       : [t('tables.free')],
   }
 }

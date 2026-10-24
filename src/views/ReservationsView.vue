@@ -9,6 +9,7 @@ import TableGrid from '../components/reservations/TableGrid.vue'
 import BookTimeline from '../components/reservations/BookTimeline.vue'
 import DetailPanel from '../components/reservations/DetailPanel.vue'
 import ReservationModal from '../components/reservations/ReservationModal.vue'
+import FloorPlanCanvas from '../components/floorplan/FloorPlanCanvas.vue'
 
 const puro = usePuroStore()
 const { t } = useI18n()
@@ -62,6 +63,7 @@ function handleSave(payload) {
       <div class="view-toggle">
         <button class="view-btn" :class="{ active: activeView === 'grid' }" title="Grid" @click="setView('grid')">⊞</button>
         <button class="view-btn" :class="{ active: activeView === 'book' }" title="Book" @click="setView('book')">☰</button>
+        <button class="view-btn" :class="{ active: activeView === 'floor' }" :title="t('floorplan.view_label')" @click="setView('floor')">▦</button>
       </div>
       <button class="btn-primary" @click="openModal()">{{ t('reservations.new') }}</button>
     </div>
@@ -77,15 +79,13 @@ function handleSave(payload) {
         :selected-table-id="selectedTableId"
         @select="selectTable"
       />
-      <DetailPanel
-        v-if="selectedTable"
-        :table="selectedTable"
-        :section="selectedTableSection"
-        :reservations="selectedTableReservations"
-        @add="openModal(selectedTableId)"
-        @toggle="puro.toggleResStatus"
-        @delete="puro.deleteReservation"
-        @close="selectedTableId = null"
+    </template>
+    <template v-else-if="activeView === 'floor'">
+      <FloorPlanCanvas
+        :elements="puro.floorPlan.elements"
+        :sections="puro.sections"
+        :editable="false"
+        @select-table="selectTable"
       />
     </template>
     <BookTimeline
@@ -99,6 +99,16 @@ function handleSave(payload) {
       @toggle="puro.toggleResStatus"
       @delete="puro.deleteReservation"
       @open="(tableId, slot) => openModal(tableId, slot)"
+    />
+    <DetailPanel
+      v-if="selectedTable"
+      :table="selectedTable"
+      :section="selectedTableSection"
+      :reservations="selectedTableReservations"
+      @add="openModal(selectedTableId)"
+      @toggle="puro.toggleResStatus"
+      @delete="puro.deleteReservation"
+      @close="selectedTableId = null"
     />
 
     <ReservationModal

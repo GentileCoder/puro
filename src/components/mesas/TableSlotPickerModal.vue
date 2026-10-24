@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { getOrderKey, orderTotal } from '../../utils/tables'
 import { useI18n } from '../../i18n'
+import { formatPrice } from '../../utils/currency'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -35,7 +36,7 @@ const options = computed(() => {
           @click="emit('pick', o.slot)"
         >
           <strong>{{ o.label }}</strong>
-          <template v-if="o.order"> · €{{ orderTotal(o.order.items).toFixed(2) }} / {{ o.order.items.length }}{{ t('tables.items_suffix') }}</template>
+          <template v-if="o.order"> · {{ formatPrice(orderTotal(o.order.items)) }} / {{ o.order.items.length }}{{ t('tables.items_suffix') }}</template>
           <span v-else style="font-size: 11px; color: #6b7280"> {{ t('tables.free') }}</span>
         </button>
       </div>
