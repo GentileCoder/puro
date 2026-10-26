@@ -33,6 +33,7 @@
   transition: all var(--transition-fast);
 }
 .pill.active { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-text); }
+.variant-del-btn { background: transparent; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 11px; line-height: 1; padding: 0; }
 
 .legend { display: flex; gap: 16px; font-size: 12px; }
 .leg { display: flex; align-items: center; gap: 6px; }

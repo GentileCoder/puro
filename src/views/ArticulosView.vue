@@ -127,7 +127,7 @@ function handleCloseCatModal() {
       </div>
       <template v-if="unassignedItems.length">
         <div v-for="a in unassignedItems" :key="a.id" class="art-row">
-          <span style="font-size: 13px">{{ a.name }}</span>
+          <span style="font-size: 13px">{{ a.name }}<span v-if="a.variants?.length" style="font-size: 11px; color: var(--color-text-muted)"> · {{ a.variants.length }} {{ t('articles.variants_suffix') }}</span></span>
           <div style="display: flex; align-items: center; gap: 10px">
             <span style="font-size: 14px; font-weight: 600; color: var(--color-success-fg)">{{ formatPrice(a.price) }}</span>
             <button class="res-act-btn" @click="openArtModal(a)">✎</button>
@@ -147,7 +147,7 @@ function handleCloseCatModal() {
       <div class="art-group-label">{{ activeSubcategory || activeCategory }}</div>
       <p v-if="!itemsInActive.length" style="color: #666; font-size: 13px; text-align: center; padding: 30px">{{ t('articles.empty') }}</p>
       <div v-for="a in itemsInActive" :key="a.id" class="art-row">
-        <span style="font-size: 13px">{{ a.name }}</span>
+        <span style="font-size: 13px">{{ a.name }}<span v-if="a.variants?.length" style="font-size: 11px; color: var(--color-text-muted)"> · {{ a.variants.length }} {{ t('articles.variants_suffix') }}</span></span>
         <div style="display: flex; align-items: center; gap: 10px">
           <span style="font-size: 14px; font-weight: 600; color: var(--color-success-fg)">{{ formatPrice(a.price) }}</span>
           <button class="res-act-btn" @click="openArtModal(a)">✎</button>

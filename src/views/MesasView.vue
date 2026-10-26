@@ -10,6 +10,7 @@ import OrderView from '../components/mesas/OrderView.vue'
 import PayModal from '../components/mesas/PayModal.vue'
 import TableSettingsModal from '../components/mesas/TableSettingsModal.vue'
 import TableSlotPickerModal from '../components/mesas/TableSlotPickerModal.vue'
+import SplitBillPickerModal from '../components/mesas/SplitBillPickerModal.vue'
 import FloorPlanCanvas from '../components/floorplan/FloorPlanCanvas.vue'
 
 const puro = usePuroStore()
@@ -25,6 +26,11 @@ const inOrderView = ref(false)
 const payOpen = ref(false)
 const settingsOpen = ref(false)
 const slotPickerTable = ref(null)
+const splitPickerTable = ref(null)
+// Captured once, the moment a table's order session begins (not on every
+// sub-bill switch within it) — lets "Discard" roll the whole visit back,
+// see beginTableSession()/discardSession() below.
+const tableSessionSnapshot = ref(null)
 
 const canConfigure = computed(() => auth.role === 'admin')
 // Broader than canConfigure — matches PlanView's canEdit convention, since
@@ -39,17 +45,61 @@ const currentOrder = computed(() => puro.openTables[getOrderKey(currentTableId.v
 const orderTitle = computed(() => {
   if (!currentTable.value) return ''
   let label = `${t('tables.table')} ${currentTable.value.label}`
-  if (currentTable.value.type === 'double') {
+  if (typeof currentSlot.value === 'string') {
+    label = `${t('tables.table')} ${currentTable.value.label}.${currentSlot.value}`
+  } else if (currentTable.value.type === 'double') {
     const slotNames = currentTable.value.slots || ['A', 'B']
     label += currentSlot.value !== null ? ` · ${slotNames[currentSlot.value]}` : ` (${t('tables.whole')})`
   }
   return label
 })
 
+// The other open bills for the table currently being viewed, when it's
+// split — lets OrderView offer a quick switcher instead of forcing a trip
+// back through the split picker for every bill.
+const splitSiblings = computed(() => {
+  if (typeof currentSlot.value !== 'string' || !currentTableId.value) return null
+  const count = puro.splitTables[currentTableId.value]
+  if (!count) return null
+  return Array.from({ length: count }, (_, i) => {
+    const slot = String(i)
+    return {
+      slot,
+      label: `${currentTable.value?.label}.${i}`,
+      hasItems: !!puro.openTables[getOrderKey(currentTableId.value, slot)],
+    }
+  })
+})
+
+// Splitting only makes sense while looking at the whole table, and only if
+// it isn't already split (growing an existing split happens from the
+// picker's "+ Add bill" instead).
+const canStartSplit = computed(() => currentSlot.value === null && !puro.splitTables[currentTableId.value])
+
 function openOrder(tableId, slot) {
+  // Only snapshot on a genuinely fresh entry from the grid/floor plan/a
+  // picker — openOrder() is also how splitting and switching bills work
+  // while already inside the view, and those must stay part of the same
+  // session, not start a new one.
+  if (!inOrderView.value) beginTableSession(tableId, slot)
   currentTableId.value = tableId
-  currentSlot.value = slot === 0 || slot === 1 ? slot : null
+  currentSlot.value = slot === 0 || slot === 1 || typeof slot === 'string' ? slot : null
   inOrderView.value = true
+}
+
+// Deep-snapshots everything about this table a session could touch: every
+// sub-bill if it's currently split, or just the one key being opened
+// otherwise. "Discard" restores exactly this.
+function beginTableSession(tableId, slot) {
+  const count = puro.splitTables[tableId] || 0
+  const keys = count
+    ? Array.from({ length: count }, (_, i) => getOrderKey(tableId, String(i)))
+    : [getOrderKey(tableId, slot)]
+  const orders = {}
+  keys.forEach((k) => {
+    orders[k] = puro.openTables[k] ? JSON.parse(JSON.stringify(puro.openTables[k])) : null
+  })
+  tableSessionSnapshot.value = { tableId, splitCount: count || null, orders }
 }
 
 function openDoublePicker(tbl) {
@@ -62,8 +112,70 @@ function pickSlot(slot) {
   openOrder(tableId, slot)
 }
 
+function openSplitPicker(tbl) {
+  splitPickerTable.value = tbl
+}
+
+// The floor-plan view's click only ever hands back a bare tableId (unlike
+// MesasGrid, which already knows per-table whether it's split) — route a
+// split table to its picker instead of the stale "whole table" order.
+function handleFloorPlanSelectTable(tableId) {
+  if (puro.splitTables[tableId]) {
+    const tbl = allTables(puro.sections).find((t) => t.id === tableId)
+    if (tbl) {
+      openSplitPicker(tbl)
+      return
+    }
+  }
+  openOrder(tableId, null)
+}
+
+function pickSplitBill(slot) {
+  const tableId = splitPickerTable.value.id
+  splitPickerTable.value = null
+  openOrder(tableId, slot)
+}
+
+function handleAddSplitBill() {
+  if (splitPickerTable.value) puro.addSplitBill(splitPickerTable.value.id)
+}
+
+function handleSplit(count) {
+  puro.splitTable(currentTableId.value, count)
+  openOrder(currentTableId.value, '0')
+}
+
+function handleAddBillFromOrder() {
+  // Same as the picker's "+ Add bill", but reachable without leaving the
+  // order screen — the new bill shows up in the switcher pill row right
+  // away since splitSiblings is derived from puro.splitTables directly.
+  puro.addSplitBill(currentTableId.value)
+}
+
+function handleMoveItem({ itemId, toSlot }) {
+  puro.moveOrderItem(currentTableId.value, currentSlot.value, toSlot, itemId)
+}
+
+function handleSwitchSplit(slot) {
+  // Same cleanup closeOrder() does on the way out — switching bills without
+  // leaving OrderView shouldn't leave a stray empty order behind either.
+  puro.discardEmptyOrder(currentTableId.value, currentSlot.value)
+  openOrder(currentTableId.value, slot)
+}
+
 function closeOrder() {
   puro.discardEmptyOrder(currentTableId.value, currentSlot.value)
+  tableSessionSnapshot.value = null
+  inOrderView.value = false
+  currentTableId.value = null
+  currentSlot.value = null
+}
+
+// Undoes everything done since this table's order session began — every
+// item added/moved, every bill added or split — not just the current bill.
+function handleDiscard() {
+  if (tableSessionSnapshot.value) puro.restoreTableSnapshot(tableSessionSnapshot.value)
+  tableSessionSnapshot.value = null
   inOrderView.value = false
   currentTableId.value = null
   currentSlot.value = null
@@ -79,11 +191,14 @@ function handleChangeQty(artId, delta) {
 }
 
 function handlePay(method) {
-  const slotSuffix = currentTable.value?.type === 'double'
-    ? currentSlot.value !== null
+  let slotSuffix = ''
+  if (typeof currentSlot.value === 'string') {
+    slotSuffix = `.${currentSlot.value}`
+  } else if (currentTable.value?.type === 'double') {
+    slotSuffix = currentSlot.value !== null
       ? ` · ${(currentTable.value.slots || ['A', 'B'])[currentSlot.value]}`
       : ` (${t('tables.whole')})`
-    : ''
+  }
   const label = (currentTable.value ? currentTable.value.label : currentTableId.value) + slotSuffix
   puro.closeTable(currentTableId.value, currentSlot.value, method, label)
   payOpen.value = false
@@ -128,8 +243,10 @@ function openFloorView() {
           :sections="puro.sections"
           :active-section="activeSection"
           :open-tables="puro.openTables"
+          :split-tables="puro.splitTables"
           @open="openOrder"
           @open-double-picker="openDoublePicker"
+          @open-split-picker="openSplitPicker"
         />
       </template>
       <FloorPlanCanvas
@@ -137,7 +254,7 @@ function openFloorView() {
         :elements="puro.floorPlan.elements"
         :sections="puro.sections"
         :editable="floorEditMode && canEditFloor"
-        @select-table="(id) => openOrder(id, null)"
+        @select-table="handleFloorPlanSelectTable"
         @open-double-picker="openDoublePicker"
       />
     </template>
@@ -145,11 +262,20 @@ function openFloorView() {
       v-else
       :title="orderTitle"
       :articulos="puro.articulos"
+      :categories="puro.categories"
       :order="currentOrder"
+      :split-siblings="splitSiblings"
+      :active-split-slot="typeof currentSlot === 'string' ? currentSlot : null"
+      :can-start-split="canStartSplit"
       @back="closeOrder"
+      @discard="handleDiscard"
       @confirm="handleConfirm"
       @change-qty="handleChangeQty"
       @pay="payOpen = true"
+      @split="handleSplit"
+      @switch-split="handleSwitchSplit"
+      @add-bill="handleAddBillFromOrder"
+      @move-item="handleMoveItem"
     />
 
     <TableSlotPickerModal
@@ -158,6 +284,15 @@ function openFloorView() {
       :open-tables="puro.openTables"
       @close="slotPickerTable = null"
       @pick="pickSlot"
+    />
+    <SplitBillPickerModal
+      :open="!!splitPickerTable"
+      :table="splitPickerTable"
+      :open-tables="puro.openTables"
+      :count="splitPickerTable ? puro.splitTables[splitPickerTable.id] || 0 : 0"
+      @close="splitPickerTable = null"
+      @pick="pickSplitBill"
+      @add-bill="handleAddSplitBill"
     />
     <PayModal
       :open="payOpen"

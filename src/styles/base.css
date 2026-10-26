@@ -58,6 +58,10 @@ textarea { resize: vertical; min-height: 60px; }
 .modal label { font-size: 12px; color: var(--color-text-muted); display: block; margin-bottom: 4px; margin-top: 12px; }
 .modal input, .modal select, .modal textarea { width: 100%; }
 .modal-actions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
-.modal-actions button { padding: 8px 16px; border-radius: var(--radius-md); border: none; font-size: 13px; cursor: pointer; }
+/* Self-contained, not just ".modal-actions button" — both classes are also
+   used standalone elsewhere in a modal (e.g. an inline "+ Add" row), where
+   relying on the .modal-actions parent left them with no padding/radius/
+   border, falling back to the raw browser button look. */
+.btn-cancel, .btn-save { padding: 8px 16px; border-radius: var(--radius-md); border: none; font-size: 13px; cursor: pointer; }
 .btn-cancel { background: var(--color-surface-raised); color: var(--color-text-muted); }
 .btn-save { background: var(--color-primary); color: var(--color-primary-text); }

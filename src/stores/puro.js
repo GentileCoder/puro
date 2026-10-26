@@ -71,6 +71,10 @@ export const usePuroStore = defineStore('puro', () => {
   const categories = ref(defaultCategories())
   const articulos = ref(defaultArticulos())
   const openTables = reactive({})
+  // { [tableId]: count } — a table being split into `count` separate bills
+  // right now (e.g. table "1" -> bills "1.0".."1.2"). Per-visit, not a
+  // table setting: cleared automatically once every sub-bill is settled.
+  const splitTables = reactive({})
   // Purely visual layer on top of sections[].tables — table identity,
   // ordering and the single/double-with-slots model stay exactly as they
   // are; this just positions/shapes those same tables (by tableId) in
@@ -116,6 +120,7 @@ export const usePuroStore = defineStore('puro', () => {
       planLocked: planLocked.value,
       planRequests: { ...planRequests },
       openTables: { ...openTables },
+      splitTables: { ...splitTables },
       floorPlan: { elements: [...floorPlan.elements], defaultTable: floorPlan.defaultTable },
       theme: theme.value,
     }
@@ -148,6 +153,7 @@ export const usePuroStore = defineStore('puro', () => {
     categories.value = defaultCategories()
     articulos.value = defaultArticulos()
     Object.keys(openTables).forEach((k) => delete openTables[k])
+    Object.keys(splitTables).forEach((k) => delete splitTables[k])
     floorPlan.elements = []
     floorPlan.defaultTable = null
     business.value = defaultBusiness()
@@ -168,6 +174,7 @@ export const usePuroStore = defineStore('puro', () => {
       if (d.categories && d.categories.length) categories.value = normalizeCategories(d.categories)
       if (d.articulos && d.articulos.length) articulos.value = d.articulos
       if (d.openTables) Object.assign(openTables, d.openTables)
+      if (d.splitTables) Object.assign(splitTables, d.splitTables)
       if (d.floorPlan && d.floorPlan.elements) floorPlan.elements = d.floorPlan.elements
       if (d.floorPlan && d.floorPlan.defaultTable) floorPlan.defaultTable = d.floorPlan.defaultTable
       if (d.theme && d.theme.id) theme.value = d.theme
@@ -262,12 +269,12 @@ export const usePuroStore = defineStore('puro', () => {
     persist()
   }
 
-  function saveArticulo({ id, name, cat, subcat, price }) {
+  function saveArticulo({ id, name, cat, subcat, price, variants }) {
     if (id) {
       const a = articulos.value.find((x) => x.id === id)
-      if (a) Object.assign(a, { name, cat, subcat: subcat || null, price })
+      if (a) Object.assign(a, { name, cat, subcat: subcat || null, price, variants: variants || [] })
     } else {
-      articulos.value.push({ id: Date.now(), name, cat, subcat: subcat || null, price })
+      articulos.value.push({ id: Date.now(), name, cat, subcat: subcat || null, price, variants: variants || [] })
     }
     persist()
   }
@@ -302,6 +309,41 @@ export const usePuroStore = defineStore('puro', () => {
     persist()
   }
 
+  // Moves a confirmed line item from one split sub-bill to another (e.g. a
+  // round moved to a different person's check) — merges into the
+  // destination's matching line if one already exists there.
+  function moveOrderItem(tableId, fromSlot, toSlot, itemId) {
+    const fromOrder = openTables[getOrderKey(tableId, fromSlot)]
+    if (!fromOrder) return
+    const item = fromOrder.items.find((i) => i.id === itemId)
+    if (!item) return
+    fromOrder.items = fromOrder.items.filter((i) => i.id !== itemId)
+    const toKey = getOrderKey(tableId, toSlot)
+    if (!openTables[toKey]) openTables[toKey] = { items: [], openedAt: Date.now() }
+    const toOrder = openTables[toKey]
+    const existing = toOrder.items.find((i) => i.id === itemId)
+    if (existing) existing.qty += item.qty
+    else toOrder.items.push(item)
+    persist()
+  }
+
+  // A split table (see splitTable() below) reverts to normal on its own
+  // once every sub-bill has actually been PAID off — called from
+  // closeTable() only, not discardEmptyOrder(): merely navigating between
+  // bills (viewing one, finding it empty, switching to another) shouldn't
+  // retroactively cancel a split nobody has ordered into yet.
+  function maybeAutoUnsplit(tableId) {
+    const count = splitTables[tableId]
+    if (!count) return
+    const anyStillOpen = Array.from({ length: count }, (_, i) => getOrderKey(tableId, String(i))).some(
+      (k) => openTables[k],
+    )
+    if (!anyStillOpen) {
+      delete splitTables[tableId]
+      persist()
+    }
+  }
+
   function discardEmptyOrder(tableId, slot) {
     const key = getOrderKey(tableId, slot)
     const order = openTables[key]
@@ -321,6 +363,54 @@ export const usePuroStore = defineStore('puro', () => {
       items: JSON.parse(JSON.stringify(order.items)),
     })
     delete openTables[key]
+    maybeAutoUnsplit(tableId)
+    persist()
+  }
+
+  // --- Split bills: divide any table into an arbitrary number of separate
+  // checks for the current visit (e.g. table "1" -> "1.0"/"1.1"/"1.2") ---
+
+  function splitTable(tableId, count) {
+    if (!splitTables[tableId]) {
+      // Whatever was already ordered for the whole table becomes bill
+      // "1.0" instead of being stranded under the old whole-table key.
+      const wholeKey = getOrderKey(tableId, null)
+      const wholeOrder = openTables[wholeKey]
+      if (wholeOrder) {
+        openTables[getOrderKey(tableId, '0')] = wholeOrder
+        delete openTables[wholeKey]
+      }
+    }
+    splitTables[tableId] = count
+    persist()
+  }
+
+  function addSplitBill(tableId) {
+    if (!splitTables[tableId]) return
+    splitTables[tableId]++
+    persist()
+  }
+
+  // Rolls a table back to exactly how it looked when its order session
+  // began — snapshot: { tableId, splitCount, orders: { [key]: order|null } }
+  // taken by the view right before entering OrderView (see MesasView.vue).
+  // Restores every key the snapshot knew about (or deletes it, if it was
+  // null then) and also deletes any key created fresh during the session
+  // that the snapshot never saw (e.g. a bill added and ordered into, then
+  // discarded).
+  function restoreTableSnapshot(snapshot) {
+    const { tableId, splitCount, orders } = snapshot
+    Object.keys(openTables)
+      .filter((k) => k === String(tableId) || k.startsWith(`${tableId}_`))
+      .forEach((k) => {
+        if (!(k in orders)) delete openTables[k]
+      })
+    Object.entries(orders).forEach(([k, v]) => {
+      if (v === null) delete openTables[k]
+      else openTables[k] = v
+    })
+    if (splitCount) splitTables[tableId] = splitCount
+    else delete splitTables[tableId]
     persist()
   }
 
@@ -403,6 +493,7 @@ export const usePuroStore = defineStore('puro', () => {
     categories,
     articulos,
     openTables,
+    splitTables,
     floorPlan,
     business,
     planDraft,
@@ -432,8 +523,12 @@ export const usePuroStore = defineStore('puro', () => {
     deleteArticulo,
     confirmAddToOrder,
     changeQty,
+    moveOrderItem,
     discardEmptyOrder,
     closeTable,
+    splitTable,
+    addSplitBill,
+    restoreTableSnapshot,
     purgeHistory,
     saveBusiness,
     lockPlan,

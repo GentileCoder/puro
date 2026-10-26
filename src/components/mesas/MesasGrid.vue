@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { orderTotal } from '../../utils/tables'
+import { orderTotal, getOrderKey } from '../../utils/tables'
 import { useI18n } from '../../i18n'
 import { formatPrice } from '../../utils/currency'
 
@@ -8,8 +8,9 @@ const props = defineProps({
   sections: { type: Array, required: true },
   activeSection: { type: [String, Number], required: true },
   openTables: { type: Object, required: true },
+  splitTables: { type: Object, required: true },
 })
-const emit = defineEmits(['open', 'open-double-picker'])
+const emit = defineEmits(['open', 'open-double-picker', 'open-split-picker'])
 const { t } = useI18n()
 
 const visibleSections = computed(() =>
@@ -30,6 +31,14 @@ function doubleInfo(tbl) {
           `${slotNames[1]}: ${s1Order ? formatPrice(orderTotal(s1Order.items)) : t('tables.free')}`,
         ],
   }
+}
+
+function splitInfo(tbl) {
+  const count = props.splitTables[tbl.id]
+  const anyOpen = Array.from({ length: count }, (_, i) => props.openTables[getOrderKey(tbl.id, String(i))]).some(
+    Boolean,
+  )
+  return { anyOpen, lines: [`${count} ${t('tables.bills_suffix')}`] }
 }
 
 function singleInfo(tbl) {
@@ -56,7 +65,16 @@ function statusColors(isOpen) {
       <div v-if="activeSection === 'all'" class="section-label">{{ sec.name }}</div>
       <template v-for="tbl in sec.tables" :key="tbl.id">
         <button
-          v-if="tbl.type === 'double'"
+          v-if="splitTables[tbl.id]"
+          class="tmesa"
+          :style="statusColors(splitInfo(tbl).anyOpen)"
+          @click="emit('open-split-picker', tbl)"
+        >
+          <span class="tid">{{ tbl.label }}</span>
+          <div class="tslots"><span v-for="(line, i) in splitInfo(tbl).lines" :key="i" class="tslot">{{ line }}</span></div>
+        </button>
+        <button
+          v-else-if="tbl.type === 'double'"
           class="tmesa"
           :style="statusColors(doubleInfo(tbl).anyOpen)"
           @click="emit('open-double-picker', tbl)"
